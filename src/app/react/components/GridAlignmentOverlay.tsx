@@ -15,7 +15,7 @@ import { DetectedGridPreview } from './DetectedGridPreview';
 import { GridTypePicker } from './GridTypePicker';
 import { IntersectionsTab } from './IntersectionsTab';
 import { FreehandTab } from './FreehandTab';
-import { gridWithPaper, hasPaperSize, type PaperSize } from '../../player/paperSize';
+import { gridWithPaper, hasPaperSize, paperSizeOf, type PaperSize } from '../../player/paperSize';
 import { PaperSizeFields } from '../../packages/components/PaperSizeFields';
 import { CloseButton } from '../../packages/components/primitives/CloseButton';
 import { LabelTooltip } from '../../packages/components/primitives/tooltip';
@@ -54,7 +54,7 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
   const store = view?.atlasStore;
   const [paperWidth, setPaperWidth] = useState(store?.getState().grid?.paperWidthInches);
   const [paperHeight, setPaperHeight] = useState(store?.getState().grid?.paperHeightInches);
-  const paperDraft = useRef<PaperSize>({ widthInches: paperWidth, heightInches: paperHeight });
+  const paperDraft = useRef<PaperSize>(paperSizeOf(paperWidth, paperHeight));
   const [paperReady, setPaperReady] = useState(hasPaperSize(paperDraft.current));
 
   useEffect(() => {
@@ -253,10 +253,10 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
   const commitPaper = useCallback((axis: 'paperWidthInches' | 'paperHeightInches', inches: number | undefined): void => {
     const grid = store?.getState().grid;
     if (!grid || !store) return;
-    const next = gridWithPaper(grid, {
-      widthInches: axis === 'paperWidthInches' ? inches : grid.paperWidthInches,
-      heightInches: axis === 'paperHeightInches' ? inches : grid.paperHeightInches,
-    });
+    const next = gridWithPaper(grid, paperSizeOf(
+      axis === 'paperWidthInches' ? inches : grid.paperWidthInches,
+      axis === 'paperHeightInches' ? inches : grid.paperHeightInches,
+    ));
     if (next === grid) return;
     runHistoryTransaction(store, () => { store.getState().setGrid(next); });
   }, [store]);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { t } from '../../i18n';
-import type { PaperSize } from '../../player/paperSize';
+import { paperSizeOf, type PaperSize } from '../../player/paperSize';
 import { positiveDecimal } from '../../player/playerScreens';
 
 function shown(value: number | undefined): string {
@@ -44,10 +44,7 @@ export function PaperSizeFields(props: {
 }): React.JSX.Element {
   const { widthInches, heightInches, disabled, onWidth, onHeight, onDraft } = props;
   const report = (nextWidth: string, nextHeight: string): void => {
-    onDraft?.({
-      widthInches: axisValue(nextWidth, widthInches),
-      heightInches: axisValue(nextHeight, heightInches),
-    });
+    onDraft?.(paperSizeOf(axisValue(nextWidth, widthInches), axisValue(nextHeight, heightInches)));
   };
   const [width, setWidth] = useState(shown(widthInches));
   const [height, setHeight] = useState(shown(heightInches));

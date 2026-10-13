@@ -7,6 +7,14 @@ export interface PaperSize {
   heightInches?: number;
 }
 
+/** Builds a paper size from optional axes without writing `undefined` (exactOptionalPropertyTypes). */
+export function paperSizeOf(widthInches?: number, heightInches?: number): PaperSize {
+  const paper: PaperSize = {};
+  if (widthInches !== undefined) paper.widthInches = widthInches;
+  if (heightInches !== undefined) paper.heightInches = heightInches;
+  return paper;
+}
+
 /** The axis that sets actual size, and the map pixels that axis covers. Null when neither axis is a positive size. */
 export interface PaperSpan {
   inches: number;
