@@ -14,6 +14,7 @@ export const toolbar: Translation = {
   'toolbar.drawOptions': 'Настройки рисования',
   'toolbar.drawingEraser': 'Ластик рисунков',
   'toolbar.eraserSize': 'Размер ластика',
+  'toolbar.fogEntireMap': 'Затуманить всю карту',
   'toolbar.fogEraser': 'Ластик тумана',
   'toolbar.fogOptions': 'Настройки тумана',
   'toolbar.fogTool': 'Туман',

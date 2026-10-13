@@ -14,6 +14,7 @@ export const toolbar = {
   'toolbar.drawOptions': 'Draw Tool Options',
   'toolbar.drawingEraser': 'Drawing Eraser',
   'toolbar.eraserSize': 'Eraser Size',
+  'toolbar.fogEntireMap': 'Fog entire map',
   'toolbar.fogEraser': 'Fog Eraser',
   'toolbar.fogOptions': 'Fog Tool Options',
   'toolbar.fogTool': 'Fog Tool',

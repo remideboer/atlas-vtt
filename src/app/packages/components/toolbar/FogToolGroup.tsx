@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { Cloud, Eraser, Lasso, Paintbrush, Square, Trash2 } from "lucide-react"
+import { Cloud, CloudFog, Eraser, Lasso, Paintbrush, Square, Trash2 } from "lucide-react"
 import { useAtlasUI } from "src/app/react/root/AtlasUIContext"
 import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
 import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
@@ -81,6 +81,14 @@ export function FogToolGroup({ activeTool, selectTool, menuOpen, toggleMenu, clo
       </div>
 
       <div className="atlas-dropdown-section">
+        <DropdownMenuItem
+          icon={CloudFog}
+          label={t('toolbar.fogEntireMap')}
+          onClick={() => {
+            view?.fogEntireMap();
+            closeMenu();
+          }}
+        />
         <DropdownMenuItem
           icon={Trash2}
           label={t('toolbar.deleteFog')}

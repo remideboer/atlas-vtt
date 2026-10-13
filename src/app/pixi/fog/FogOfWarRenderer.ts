@@ -7,7 +7,7 @@ import type { Viewport } from 'pixi-viewport';
 import type { StoreApi } from 'zustand';
 import type { EventEmitter } from 'events';
 import type { ViewAtlasState } from '../../storeFactory';
-import type { FogBounds, FogOperation } from '../../types/fogTypes';
+import { fogCoveringMap, type FogBounds, type FogOperation } from '../../types/fogTypes';
 import { validateFogOperation } from '../../fog/fogOperationShape';
 import { FogCoverageCache } from '../../fog/FogCoverageCache';
 import type { FogCoverage } from '../../fog/fogCoverage';
@@ -72,6 +72,7 @@ export class FogOfWarRenderer {
   private readonly pointerLeaveHandler = (): void => this.onPointerLeave();
   private fogBrushSizeChangedHandler: (size: number) => void;
   private fogClearAllHandler: () => void;
+  private fogCoverMapHandler: () => void;
   private fogModeChangedHandler: (mode: StrokeMode) => void;
   private readonly mapImageUpdatedHandler = (): void => {
     if (!this.store.getState().isMapLoading) {
@@ -141,6 +142,7 @@ export class FogOfWarRenderer {
     this.pointerUpHandler = this.onPointerUp.bind(this);
     this.fogBrushSizeChangedHandler = (size: number) => this.setBrushSize(size);
     this.fogClearAllHandler = () => this.clearAllFog();
+    this.fogCoverMapHandler = () => this.coverMap();
     this.fogModeChangedHandler = (mode: StrokeMode) => this.setFogMode(mode);
 
     // ── Event listeners ─────────────────────────────────────────────
@@ -290,6 +292,7 @@ export class FogOfWarRenderer {
 
     this.eventBus.off('fog-brush-size-changed', this.fogBrushSizeChangedHandler);
     this.eventBus.off('fog-clear-all', this.fogClearAllHandler);
+    this.eventBus.off('fog-cover-map', this.fogCoverMapHandler);
     this.eventBus.off('fog-mode-changed', this.fogModeChangedHandler);
     this.eventBus.off('map-image-updated', this.mapImageUpdatedHandler);
 
@@ -320,6 +323,12 @@ export class FogOfWarRenderer {
 
   private clearAllFog(): void {
     this.store.getState().clearFog();
+  }
+
+  private coverMap(): void {
+    const cover = fogCoveringMap(this.mapRect());
+    if (!cover) return;
+    this.store.getState().addFogOperation(cover);
   }
 
   private setBrushSize(size: number): void {
@@ -358,6 +367,7 @@ export class FogOfWarRenderer {
 
     this.eventBus.on('fog-brush-size-changed', this.fogBrushSizeChangedHandler);
     this.eventBus.on('fog-clear-all', this.fogClearAllHandler);
+    this.eventBus.on('fog-cover-map', this.fogCoverMapHandler);
     this.eventBus.on('fog-mode-changed', this.fogModeChangedHandler);
     this.eventBus.on('map-image-updated', this.mapImageUpdatedHandler);
   }

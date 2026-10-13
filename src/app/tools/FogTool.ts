@@ -49,6 +49,13 @@ export class FogTool {
   }
 
   /**
+   * Cover the whole map with fog.
+   */
+  public coverMap(): void {
+    this.eventBus.emit('fog-cover-map');
+  }
+
+  /**
    * Current configuration for the fog tool.
    */
   public getSettings(): FogSettings {

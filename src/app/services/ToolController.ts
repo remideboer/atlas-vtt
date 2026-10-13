@@ -115,6 +115,13 @@ export class ToolController {
   public clearAllFog(): void {
     this.fogTool.clearAll();
   }
+
+  /**
+   * Cover the whole map with fog
+   */
+  public fogEntireMap(): void {
+    this.fogTool.coverMap();
+  }
   
   /**
    * Set measurement shape

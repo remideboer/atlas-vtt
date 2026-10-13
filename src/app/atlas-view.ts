@@ -760,6 +760,14 @@ export class AtlasView extends FileView {
   }
 
   /**
+   * Cover the whole map with fog
+   * Delegates to ToolController
+   */
+  public fogEntireMap(): void {
+    this._serviceManager.getToolController().fogEntireMap();
+  }
+
+  /**
    * Set measurement shape
    * Delegates to ToolController
    */

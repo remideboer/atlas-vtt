@@ -50,6 +50,24 @@ type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : n
 /** Input type for creating a fog operation (without auto-generated fields) */
 export type FogOperationInput = DistributiveOmit<FogOperation, 'id' | 'kind' | 'timestamp'>;
 
+/**
+ * One paint rectangle over the map image, so a scene can start fully hidden.
+ * None when there is no image to cover.
+ */
+export function fogCoveringMap(
+  map: { x: number; y: number; width: number; height: number } | null,
+): FogOperationInput | null {
+  if (!map || !(map.width > 0) || !(map.height > 0)) return null;
+  return {
+    type: 'rectangle',
+    x: map.x,
+    y: map.y,
+    width: map.width,
+    height: map.height,
+    isErasing: false,
+  };
+}
+
 // ── Helper ──────────────────────────────────────────────────────────────
 
 export interface FogBounds {
