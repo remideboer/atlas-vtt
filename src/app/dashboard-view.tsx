@@ -19,6 +19,7 @@ import { runInBackground } from './utils/backgroundTask';
 import { t } from './i18n';
 import { mapThumbnailPath } from './utils/dataFileMigration';
 import { byLastOpened, SceneOpenHistory, type SceneRecency } from './services/sceneOpenHistory';
+import { openMapInView } from './plugin/atlasLeaves';
 
 export const DASHBOARD_VIEW_TYPE = "atlas-vtt-dashboard";
 
@@ -304,17 +305,12 @@ export class DashboardView extends ItemView {
   private async handleOpenScene(filePath: string): Promise<void> {
     try {
       const file = this.app.vault.getAbstractFileByPath(filePath);
-      if (!file) {
+      if (!(file instanceof TFile)) {
         new Notice(t('view.sceneNotFound', { path: filePath }));
         return;
       }
 
-      const leaf = this.app.workspace.getLeaf(true);
-      await leaf.setViewState({
-        type: 'atlas-vtt',
-        state: { file: filePath }
-      });
-      this.app.workspace.setActiveLeaf(leaf);
+      await openMapInView(this.app, file);
     } catch (error) {
       console.error('Error opening scene:', error);
       new Notice(t('dashboard.openFailed'));
