@@ -15,6 +15,7 @@ import { cannotRender, PlayerFrameMirror, type PlayerFrameSource } from './Playe
 import { cameraFramingPicture, framedCamera } from './playerFrame';
 import { cellsAlong, pixelsPerInch } from '../player/actualSize';
 import { promptPlayerScreen } from '../player/PlayerScreenModal';
+import { maximizeDesktopWindow, RESTORE_WAIT_MS, whenWindowPlaced } from '../player/desktopWindow';
 import { displayMatching, prepareDesktopScreen, watchDisplayMetrics, workAreaMatching, type PlayerDisplay } from '../player/playerDisplays';
 import {
   actualScaleFor,
@@ -388,12 +389,22 @@ export class PlayerWindowService {
   }
 
   /**
-   * Fill the work area of the screen the player window is on. Nothing when the window is closed
-   * or this device has no desktop screen list.
+   * Maximize the player window on the screen it is on. Nothing when the window is closed.
+   * A popout's saved size arrives after it opens, so the maximize is asked for again once that settles.
    */
   public async maximizeWindow(): Promise<void> {
     const win = this.getWindow();
     if (!win) return;
+    await whenWindowPlaced(win);
+    await this.applyMaximized(win);
+    await new Promise<void>((resolve) => { win.setTimeout(resolve, RESTORE_WAIT_MS); });
+    if (!this.isWindowOpen() || this.playerWindow !== win) return;
+    await this.applyMaximized(win);
+  }
+
+  private async applyMaximized(win: Window): Promise<void> {
+    if (win.closed) return;
+    if (maximizeDesktopWindow(win)) return;
     await prepareDesktopScreen();
     const frame = workAreaMatching(win);
     if (!frame) return;
