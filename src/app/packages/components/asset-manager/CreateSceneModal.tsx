@@ -23,6 +23,8 @@ interface CreateSceneModalProps {
   // Optional prefill when invoked from double-clicking a map
   backgroundPath?: string | null;
   defaultName?: string;
+  paperWidthInches?: number;
+  paperHeightInches?: number;
 }
 
 export default function CreateSceneModal({
@@ -32,7 +34,9 @@ export default function CreateSceneModal({
   assetService,
   onSceneCreated,
   backgroundPath,
-  defaultName
+  defaultName,
+  paperWidthInches,
+  paperHeightInches,
 }: CreateSceneModalProps) {
   const [sceneName, setSceneName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -94,9 +98,16 @@ export default function CreateSceneModal({
       const collectionId = collection.id;
 
       // If invoked from a map, the scene starts on its image (as a vault-relative path)
+      const paper = paperWidthInches !== undefined || paperHeightInches !== undefined
+        ? {
+          ...(paperWidthInches !== undefined && { widthInches: paperWidthInches }),
+          ...(paperHeightInches !== undefined && { heightInches: paperHeightInches }),
+        }
+        : undefined;
       const mapData = newSceneFile(
         assetService.getCollectionSettings(collectionId),
         backgroundPath ? normalizeImagePath(backgroundPath) : null,
+        paper,
       );
 
       const scenePath = normalizePath(`atlas-vtt/collections/${collectionId}/scenes/${sceneName.trim()}.atlasmap`);

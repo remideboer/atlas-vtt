@@ -57,6 +57,10 @@ export interface MapAsset extends Asset {
   imageUrl: string;
   /** Vault path of the map image. */
   mapFilePath: string;
+  /** How wide this map is on paper, in inches. */
+  paperWidthInches?: number;
+  /** How tall this map is on paper, in inches. */
+  paperHeightInches?: number;
 }
 
 export interface SceneAsset extends Asset {

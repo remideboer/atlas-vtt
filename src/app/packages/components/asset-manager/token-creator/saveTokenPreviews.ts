@@ -111,7 +111,11 @@ async function savePreviews(options: SaveTokenPreviewsOptions): Promise<number> 
       thumbnailPath = await thumbnails.tryThumbnailForImage(imagePath, thumbnail);
       const metadata = { collection: destination.id, tags: preview.tags ?? tags, ...(thumbnailPath && { thumbnailPath }) };
       const asset: NewAsset = mode === 'map'
-        ? { type: 'map', name: preview.name, mapFilePath: imagePath, ...metadata }
+        ? {
+          type: 'map', name: preview.name, mapFilePath: imagePath, ...metadata,
+          ...(preview.paperWidthInches !== undefined && { paperWidthInches: preview.paperWidthInches }),
+          ...(preview.paperHeightInches !== undefined && { paperHeightInches: preview.paperHeightInches }),
+        }
         : {
           type: 'token', showRing: preview.showRing !== false, name: preview.name, imagePath,
           ...(preview.size !== undefined && { size: preview.size }),

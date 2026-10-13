@@ -140,6 +140,21 @@ describe('GridAlignmentOverlay', () => {
     expect(store.getState().moved).toBeNull();
   });
 
+  it('applies a paper size when no grid was measured', () => {
+    const { store, onClose } = open();
+    const apply = screen.getByRole('button', { name: 'Apply' }) as HTMLButtonElement;
+    expect(apply.disabled).toBe(true);
+
+    fireEvent.change(screen.getByLabelText('Width (in)'), { target: { value: '36' } });
+    fireEvent.change(screen.getByLabelText('Height (in)'), { target: { value: '24' } });
+    expect(apply.disabled).toBe(false);
+
+    fireEvent.click(apply);
+
+    expect(store.getState().grid).toMatchObject({ size: 70, type: 'hex-vertical', paperWidthInches: 36, paperHeightInches: 24 });
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('ends the alignment when the view opens another scene, with the map put back', async () => {
     detectGridFromMapImage.mockResolvedValue({ gridType: 'square', cellSize: 64, offsetX: 0, offsetY: 0, confidence: 0.6, mapStretch: { x: 1, y: 1.1 } });
     const { store, stretches, onClose } = open();

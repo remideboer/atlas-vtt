@@ -50,4 +50,11 @@ export interface GridState {
   cellNumbers?: CellNumberFormat;
   /** Opacity of the cell numbers (0 to 1), separate from the grid lines; unset is `DEFAULT_CELL_NUMBER_OPACITY`. */
   cellNumberOpacity?: number;
+  /**
+   * How wide this map is on paper, in inches. With a height, width sets actual size; height is
+   * used only when width is blank. Unset keeps one grid cell at the screen setup's cell size.
+   */
+  paperWidthInches?: number;
+  /** How tall this map is on paper, in inches. Used for actual size only when the width is blank. */
+  paperHeightInches?: number;
 }

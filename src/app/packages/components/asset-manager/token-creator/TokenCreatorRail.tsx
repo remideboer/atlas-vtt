@@ -9,7 +9,8 @@ import { CollectionSelect } from './CollectionSelect';
 import { TagPicker } from './TagPicker';
 import { UploadDropzone } from './UploadDropzone';
 import { cropReset } from './cropMath';
-import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from './types';
+import { PaperSizeFields } from '../../PaperSizeFields';
+import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, type TokenPreview } from './types';
 import type { CollectionMetadata } from '../../../../services/AssetService';
 import type { CreatorMode } from './types';
 import type { TokenPreviewsApi } from './useTokenPreviews';
@@ -34,6 +35,12 @@ interface TokenCreatorRailProps {
   onToggleTag: (tag: string) => void;
   onCreateTag: (tag: string) => Promise<string>;
   tagsDisabled: boolean;
+}
+
+function sharedInches(list: TokenPreview[], key: 'paperWidthInches' | 'paperHeightInches'): number | undefined {
+  const selected = list.filter((preview) => preview.isSelected);
+  const first = selected[0]?.[key];
+  return selected.length > 0 && selected.every((preview) => preview[key] === first) ? first : undefined;
 }
 
 /** Left column of the creator: intake, selection, metadata and batch tools. */
@@ -109,6 +116,18 @@ export function TokenCreatorRail(props: TokenCreatorRailProps): React.JSX.Elemen
         <div className="atlas-token-creator__section-title">{t('creator.collection')}</div>
         <CollectionSelect value={collection} options={collections} onChange={onCollectionChange} />
       </section>
+
+      {mode === 'map' && count > 0 && (
+        <section className="atlas-token-creator__section">
+          <PaperSizeFields
+            widthInches={sharedInches(previews.previews, 'paperWidthInches')}
+            heightInches={sharedInches(previews.previews, 'paperHeightInches')}
+            disabled={selectedCount === 0}
+            onWidth={(inches) => previews.updateSelected({ paperWidthInches: inches })}
+            onHeight={(inches) => previews.updateSelected({ paperHeightInches: inches })}
+          />
+        </section>
+      )}
 
       <p className="atlas-token-creator__empty-note">Tags apply to {selectedCount} selected {selectedCount === 1 ? 'preview' : 'previews'}.</p>
       <TagPicker available={availableTags} selected={selectedTags} onToggle={onToggleTag} onCreate={props.onCreateTag} disabled={props.tagsDisabled} />

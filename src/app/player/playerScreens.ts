@@ -1,6 +1,8 @@
 import type { App } from 'obsidian';
 import { DEFAULT_CELL_INCHES, pixelsPerInch, cssPixelsPerWorldPixel } from './actualSize';
+import { paperSpan, type PaperSize } from './paperSize';
 import type { PlayerDisplay } from './playerDisplays';
+import type { Size } from '../types/playerFrame';
 
 /** Screen facts this device remembers. They never sync. */
 export const PLAYER_SCREENS_KEY = 'atlas-vtt:player-screens';
@@ -188,18 +190,24 @@ export function screenSetupNeeded(settings: PlayerScreenSettings, display: Playe
 }
 
 /**
- * CSS pixels per world pixel for `cellPixels` on this screen. None when the grid or the screen
- * has no size.
+ * CSS pixels per world pixel on this screen. A paper size uses the map's current world size
+ * (width when it is filled, otherwise height). Without one, one grid cell is the screen setup's
+ * cell size. None when that size, or the screen, is missing.
  */
 export function actualScaleFor(input: {
   cellPixels: number | undefined;
   settings: PlayerScreenSettings;
   display: PlayerDisplay | null;
   devicePixelRatio: number;
+  paper?: PaperSize | null;
+  map?: Size | null;
 }): number | null {
   const profile = profileFor(input.settings, input.display);
   const pixels = screenPixels(input.display, profile);
-  if (!profile || !pixels || input.cellPixels === undefined) return null;
+  const span = paperSpan(input.paper, input.map);
+  const along = span?.pixels ?? input.cellPixels;
+  const inches = span?.inches ?? input.settings.cellInches;
+  if (!profile || !pixels || along === undefined) return null;
   const ppi = pixelsPerInch({
     widthPx: pixels.width,
     heightPx: pixels.height,
@@ -209,5 +217,5 @@ export function actualScaleFor(input: {
     ...(profile.calibration !== undefined ? { calibration: profile.calibration } : {}),
   });
   if (ppi === null) return null;
-  return cssPixelsPerWorldPixel(input.cellPixels, input.settings.cellInches, ppi, input.devicePixelRatio);
+  return cssPixelsPerWorldPixel(along, inches, ppi, input.devicePixelRatio);
 }

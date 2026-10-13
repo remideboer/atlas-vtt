@@ -3,6 +3,7 @@ import { DEFAULT_TOKEN_SETTINGS } from '../storeFactory';
 import type { CollectionSettings, GridUnitType } from '../types/collectionSettingsTypes';
 import type { SceneLighting } from '../types/lightingTypes';
 import { ATLAS_SCHEMA, ATLAS_VERSION, type MapFile } from './MapPersistence';
+import type { PaperSize } from '../player/paperSize';
 import type { GridState } from '../types/gridTypes';
 
 type SceneObjects = MapFile['objects'];
@@ -24,7 +25,7 @@ export interface NewSceneFile {
  * aligned to the image on the first load, measuring as the collection does, and the token
  * settings a new scene of the collection starts with.
  */
-export function newSceneFile(settings: CollectionSettings, background: string | null): NewSceneFile {
+export function newSceneFile(settings: CollectionSettings, background: string | null, paper?: PaperSize | null): NewSceneFile {
   const { gridDefaults } = settings;
   return {
     state: {
@@ -43,6 +44,8 @@ export function newSceneFile(settings: CollectionSettings, background: string | 
         lineType: 'solid',
         lineWidth: 1,
         autoDetect: true,
+        ...(paper?.widthInches !== undefined && { paperWidthInches: paper.widthInches }),
+        ...(paper?.heightInches !== undefined && { paperHeightInches: paper.heightInches }),
         ...(gridDefaults && {
           unitType: gridDefaults.unitType,
           unitDistance: gridDefaults.unitDistance,

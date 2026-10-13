@@ -14,6 +14,7 @@ import { t } from '../i18n';
 import { cannotRender, PlayerFrameMirror, type PlayerFrameSource } from './PlayerFrameMirror';
 import { cameraFramingPicture, framedCamera } from './playerFrame';
 import { cellsAlong, pixelsPerInch } from '../player/actualSize';
+import { paperFromGrid, paperSpan } from '../player/paperSize';
 import { promptPlayerScreen } from '../player/PlayerScreenModal';
 import { maximizeDesktopWindow, RESTORE_WAIT_MS, whenWindowPlaced } from '../player/desktopWindow';
 import { displayMatching, prepareDesktopScreen, watchDisplayMetrics, workAreaMatching, type PlayerDisplay } from '../player/playerDisplays';
@@ -831,11 +832,14 @@ export class PlayerWindowService {
   private actualScaleNow(): number | null {
     const win = this.playerWindow;
     if (!win) return null;
+    const grid = this.streamSource?.store?.getState().grid;
     return actualScaleFor({
-      cellPixels: this.streamSource?.store?.getState().grid?.size,
+      cellPixels: grid?.size,
       settings: this.screens,
       display: this.currentDisplay(),
       devicePixelRatio: win.devicePixelRatio || 1,
+      paper: paperFromGrid(grid),
+      map: this.streamSource?.mapWorldSize?.() ?? null,
     });
   }
 
@@ -877,9 +881,12 @@ export class PlayerWindowService {
       ...(profile.heightMm !== undefined ? { heightMm: profile.heightMm } : {}),
       ...(profile.calibration !== undefined ? { calibration: profile.calibration } : {}),
     }) : null;
-    const across = pixels && ppi ? cellsAlong(pixels.width, this.screens.cellInches, ppi) : null;
-    const down = pixels && ppi ? cellsAlong(pixels.height, this.screens.cellInches, ppi) : null;
-    if (map && across !== null && down !== null && (map.width / cellPixels > across || map.height / cellPixels > down)) {
+    const grid = this.streamSource?.store?.getState().grid;
+    const span = paperSpan(paperFromGrid(grid), this.streamSource?.mapWorldSize?.() ?? map);
+    const inches = span && cellPixels > 0 ? span.inches * cellPixels / span.pixels : this.screens.cellInches;
+    const across = pixels && ppi ? cellsAlong(pixels.width, inches, ppi) : null;
+    const down = pixels && ppi ? cellsAlong(pixels.height, inches, ppi) : null;
+    if (map && cellPixels > 0 && across !== null && down !== null && (map.width / cellPixels > across || map.height / cellPixels > down)) {
       new Notice(t('player.actualSizeLarger', { across: Math.floor(across), down: Math.floor(down) }));
       return;
     }

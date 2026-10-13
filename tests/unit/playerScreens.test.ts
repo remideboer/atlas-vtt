@@ -49,6 +49,44 @@ describe('player screen profiles', () => {
     expect(actualScaleFor({ cellPixels: undefined, settings, display: DELL, devicePixelRatio: 1 })).toBeNull();
   });
 
+  it('scales a 36 inch map by its paper width, which is the cell size that paper gives', () => {
+    const settings = savePlayerScreen(storage(), DELL.id, {
+      cellInches: 1,
+      crisp: false,
+      calibration: 1,
+      diagonalInches: 27,
+    });
+    const ppi = Math.hypot(2560, 1440) / 27;
+    const map = { width: 3600, height: 2400 };
+    const paper = { widthInches: 36, heightInches: 24 };
+    const scale = actualScaleFor({
+      cellPixels: undefined,
+      settings,
+      display: DELL,
+      devicePixelRatio: 2,
+      paper,
+      map,
+    });
+    expect(scale).toBeCloseTo((36 * ppi) / 3600 / 2, 5);
+    const cellPixels = 70;
+    const fromCell = actualScaleFor({
+      cellPixels,
+      settings: { ...settings, cellInches: 36 * cellPixels / 3600 },
+      display: DELL,
+      devicePixelRatio: 2,
+    });
+    expect(scale).toBeCloseTo(fromCell ?? 0, 5);
+    const heightOnly = actualScaleFor({
+      cellPixels: undefined,
+      settings,
+      display: DELL,
+      devicePixelRatio: 1,
+      paper: { heightInches: 24 },
+      map,
+    });
+    expect(heightOnly).toBeCloseTo((24 * ppi) / map.height, 5);
+  });
+
   it('asks for a size when only the resolution is known', () => {
     const empty = { cellInches: 1, screens: {} };
     expect(screenSetupNeeded(empty, DELL)).toBe(true);

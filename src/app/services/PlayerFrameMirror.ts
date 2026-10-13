@@ -3,7 +3,7 @@ import type { StoreApi } from 'zustand';
 import type { PlayerCameraState } from '../local-player-view';
 import type { ViewAtlasState } from '../storeFactory';
 import type { AtlasSettings } from './SettingsService';
-import type { FramePiece, PlayerFrame, Screen } from '../types/playerFrame';
+import type { FramePiece, PlayerFrame, Screen, Size } from '../types/playerFrame';
 import { playerFrame, viewOf } from './playerFrame';
 import { presentedPlayerFrame, type PlayerRotation, type ZoomLock } from './playerPresentation';
 import type { PlayerRollSources } from './playerRollSource';
@@ -58,6 +58,8 @@ export interface PlayerFrameSource extends DemandRegions {
   showCamera?(camera: PlayerCameraState): void;
   /** The DM's screen: what a camera without a rectangle of its own is centred in, and the pixels the players' picture never has fewer of. */
   getScreen?(): Screen | undefined;
+  /** The loaded map's world size, a stretch included. Actual size reads a paper size against it. */
+  mapWorldSize?(): Size | null;
   /** False while nothing can be rendered (a lost graphics context): players keep the last frame. */
   canRender?(): boolean;
   /** Renders the players' frame, then the DM's frame again. */

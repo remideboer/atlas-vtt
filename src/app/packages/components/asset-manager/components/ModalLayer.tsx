@@ -199,6 +199,8 @@ export function ModalLayer({
             assetService={data.assetService}
             backgroundPath={crud.createScenePrefill?.backgroundPath ?? null}
             defaultName={crud.createScenePrefill?.defaultName ?? ''}
+            paperWidthInches={crud.createScenePrefill?.paperWidthInches}
+            paperHeightInches={crud.createScenePrefill?.paperHeightInches}
             onSceneCreated={onClose}
           />
         )}

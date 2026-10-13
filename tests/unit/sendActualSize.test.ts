@@ -96,6 +96,20 @@ describe('send map at actual size', () => {
     expect(Notice).toHaveBeenCalledWith('Set the grid size before sending the map at actual size');
   });
 
+  test('opens the window when a paper size stands in for a missing grid', async () => {
+    const opened = players(true, false);
+    vi.mocked(presentActiveTab).mockImplementation(async () => {
+      held.current = opened;
+    });
+
+    await sendMapAtActualSize(app, undefined, map, { widthInches: 36 });
+
+    expect(presentActiveTab).toHaveBeenCalledWith(app, { openWindow: true });
+    expect(opened.maximizeWindow).toHaveBeenCalledTimes(1);
+    expect(opened.enableActualSize).toHaveBeenCalledWith(0, map);
+    expect(Notice).not.toHaveBeenCalled();
+  });
+
   test('says the window is not open when presenting it does not open one', async () => {
     vi.mocked(presentActiveTab).mockResolvedValue(undefined);
 

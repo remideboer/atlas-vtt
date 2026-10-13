@@ -264,6 +264,10 @@ async function waitForRenderedFrameSource(view: AtlasView): Promise<PlayerFrameS
       const viewport = view.serviceManager.getRendererService().getViewport();
       return viewport ? { width: viewport.screenWidth, height: viewport.screenHeight, resolution: app.renderer.resolution } : undefined;
     },
+    mapWorldSize: () => {
+      const rect = renderer.getMapImage()?.worldRect;
+      return rect ? { width: rect.width, height: rect.height } : null;
+    },
     canRender: () => renderer.canRenderPlayerFrame(),
     release: () => renderer.releasePlayerFrame(),
     addDemandRegion: (region) => renderer.getMapImage()?.addDemandRegion(region) ?? noRegion,

@@ -14,6 +14,7 @@ import type { ViewAtlasState, ViewAtlasStore } from './storeFactory';
 import { EventEmitter } from 'events';
 import { PixiAppManager } from "./pixi/PixiAppManager"; // Import the new manager
 import { canvasMenuEntries } from "./pixi/canvasMenu";
+import { paperFromGrid } from "./player/paperSize";
 import { openPlayerScreenSetup, sendMapAtActualSize } from "./player/sendActualSize";
 import { openContextMenuGlobal } from "./react/root/ContextMenuContext";
 import { savePlayerRotation } from "./services/deviceSettings";
@@ -746,7 +747,13 @@ export class PixiRendererOrchestrator { // Renamed class
         sendMap: () => { void presentActiveTab(this.obsApp); },
         sendActualSize: () => {
           const rect = this.mapImage?.worldRect;
-          void sendMapAtActualSize(this.obsApp, this.store.getState().grid?.size, rect ? { width: rect.width, height: rect.height } : null);
+          const grid = this.store.getState().grid;
+          void sendMapAtActualSize(
+            this.obsApp,
+            grid?.size,
+            rect ? { width: rect.width, height: rect.height } : null,
+            paperFromGrid(grid),
+          );
         },
         openScreenSetup: () => { void openPlayerScreenSetup(this.obsApp); },
         openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },

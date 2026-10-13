@@ -63,6 +63,13 @@ describe('the file of a new scene', () => {
       .toMatchObject({ unitType: 'meters', unitDistance: 1.5, measurementType: 'units' });
   });
 
+  it('copies a map paper size onto the scene grid', () => {
+    const grid = newSceneFile({ conditions: [] }, null, { widthInches: 36, heightInches: 24 }).state.grid;
+
+    expect(grid.paperWidthInches).toBe(36);
+    expect(grid.paperHeightInches).toBe(24);
+  });
+
   it('loads as an empty scene', () => {
     const loaded = migrateMapFile(parseSceneFile(JSON.stringify(newSceneFile({ conditions: [] }, 'atlas-vtt/assets/keep.webp'))).state);
 

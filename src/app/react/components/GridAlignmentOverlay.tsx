@@ -15,6 +15,8 @@ import { DetectedGridPreview } from './DetectedGridPreview';
 import { GridTypePicker } from './GridTypePicker';
 import { IntersectionsTab } from './IntersectionsTab';
 import { FreehandTab } from './FreehandTab';
+import { gridWithPaper, hasPaperSize, type PaperSize } from '../../player/paperSize';
+import { PaperSizeFields } from '../../packages/components/PaperSizeFields';
 import { CloseButton } from '../../packages/components/primitives/CloseButton';
 import { LabelTooltip } from '../../packages/components/primitives/tooltip';
 import { t } from '../../i18n';
@@ -50,6 +52,23 @@ interface GridAlignmentOverlayProps {
 export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): React.ReactElement {
   const { view } = useAtlasUI();
   const store = view?.atlasStore;
+  const [paperWidth, setPaperWidth] = useState(store?.getState().grid?.paperWidthInches);
+  const [paperHeight, setPaperHeight] = useState(store?.getState().grid?.paperHeightInches);
+  const paperDraft = useRef<PaperSize>({ widthInches: paperWidth, heightInches: paperHeight });
+  const [paperReady, setPaperReady] = useState(hasPaperSize(paperDraft.current));
+
+  useEffect(() => {
+    if (!store) return;
+    const publish = (): void => {
+      const next = store.getState().grid;
+      const width = next?.paperWidthInches;
+      const height = next?.paperHeightInches;
+      setPaperWidth((prev) => prev === width ? prev : width);
+      setPaperHeight((prev) => prev === height ? prev : height);
+    };
+    publish();
+    return store.subscribe(publish);
+  }, [store]);
 
   // The grid the GM aligns: the scene's own to begin with, theirs to change, and what auto-detect finds.
   const [gridType, setGridType] = useState<GridType>(() => store?.getState().grid?.type ?? 'square');
@@ -166,13 +185,27 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
     });
   }, [view, detecting, clearAlignment]);
 
-  const handleApply = useCallback((): void => {
-    if (!store || !result) return;
+  const closeAlignment = useCallback((): void => {
+    controllerRef.current?.destroy();
+    controllerRef.current = null;
+    onClose();
+  }, [onClose]);
 
+  const handleApply = useCallback((): void => {
+    if (!store) return;
     const currentGrid = store.getState().grid;
     if (!currentGrid) return;
+    const withPaper = gridWithPaper(currentGrid, paperDraft.current);
+    if (!result) {
+      if (!hasPaperSize(paperDraft.current)) return;
+      if (withPaper !== currentGrid) {
+        runHistoryTransaction(store, () => { store.getState().setGrid(withPaper); });
+      }
+      closeAlignment();
+      return;
+    }
     const renderer = view?.renderer;
-    const grid = { ...gridAlignedTo(currentGrid, result), enabled: true, visible: true };
+    const grid = { ...gridAlignedTo(withPaper, result), enabled: true, visible: true };
     // The map keeps the stretch the preview gave it (the renderer follows the store's), and what
     // stands on the map keeps its place on it.
     const from = readMapStretch(currentGrid.mapStretch);
@@ -185,10 +218,8 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
       renderer?.applyGridAlignment?.(result.cellSize, result.offsetX, result.offsetY, result.gridType);
     });
 
-    controllerRef.current?.destroy();
-    controllerRef.current = null;
-    onClose();
-  }, [store, result, onClose, view]);
+    closeAlignment();
+  }, [store, result, closeAlignment, view]);
 
   // -----------------------------------------------------------------------
   // Tab switching — clean up visuals from previous tab
@@ -218,6 +249,22 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
     restartTab();
     setFitToLines(on => !on);
   }, [restartTab]);
+
+  const commitPaper = useCallback((axis: 'paperWidthInches' | 'paperHeightInches', inches: number | undefined): void => {
+    const grid = store?.getState().grid;
+    if (!grid || !store) return;
+    const next = gridWithPaper(grid, {
+      widthInches: axis === 'paperWidthInches' ? inches : grid.paperWidthInches,
+      heightInches: axis === 'paperHeightInches' ? inches : grid.paperHeightInches,
+    });
+    if (next === grid) return;
+    runHistoryTransaction(store, () => { store.getState().setGrid(next); });
+  }, [store]);
+
+  const onPaperDraft = useCallback((paper: PaperSize): void => {
+    paperDraft.current = paper;
+    setPaperReady(hasPaperSize(paper));
+  }, []);
 
   // -----------------------------------------------------------------------
   // Another scene in this view ends the alignment: what was measured belongs to the map it was measured on
@@ -295,6 +342,14 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
         </LabelTooltip>
         {detectionStatus && <p className="atlas-grid-alignment-hint">{detectionStatus}</p>}
 
+        <PaperSizeFields
+          widthInches={paperWidth}
+          heightInches={paperHeight}
+          onWidth={(inches) => commitPaper('paperWidthInches', inches)}
+          onHeight={(inches) => commitPaper('paperHeightInches', inches)}
+          onDraft={onPaperDraft}
+        />
+
         <GridTypePicker value={gridType} onChange={handleGridTypeChange} />
 
         <LabelTooltip label={t('align.fitToLinesTip')} describe>
@@ -329,7 +384,7 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
           </button>
           <button
             className="atlas-grid-alignment-btn atlas-grid-alignment-btn--primary"
-            disabled={!result}
+            disabled={!result && !paperReady}
             onClick={handleApply}
           >
             {t('common.apply')}

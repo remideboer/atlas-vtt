@@ -201,6 +201,8 @@ export function formatServiceAsset(
         ...cardArt(app, asset, imageUrl, thumbnailOf),
         imageUrl,
         mapFilePath: asset.mapFilePath,
+        ...(asset.paperWidthInches !== undefined && { paperWidthInches: asset.paperWidthInches }),
+        ...(asset.paperHeightInches !== undefined && { paperHeightInches: asset.paperHeightInches }),
       };
     }
     case 'scene':

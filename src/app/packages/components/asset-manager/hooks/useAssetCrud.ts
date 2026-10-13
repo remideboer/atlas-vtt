@@ -11,10 +11,12 @@ import { t } from '../../../../i18n';
 import { folderIdOf, tabFolderPath } from '../utils/assetFolders';
 import { folderMoveProblem, moveAssetsIntoFolder } from '../utils/assetFolderMove';
 
-/** Background and name carried over when a scene is created from a map asset. */
+/** Background, name and paper size carried over when a scene is created from a map asset. */
 export interface CreateScenePrefill {
   backgroundPath: string | null;
   defaultName: string;
+  paperWidthInches?: number;
+  paperHeightInches?: number;
 }
 
 export interface AssetCrudActions extends CollectionTransferActions {

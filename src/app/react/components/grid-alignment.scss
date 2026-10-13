@@ -215,3 +215,32 @@
     justify-content: center;
   }
 }
+
+.atlas-paper-size {
+  @include atlas-flex-col($spacing-s);
+
+  &__title {
+    font-size: $font-ui-smaller;
+    color: var(--text-muted);
+  }
+
+  &__row {
+    @include atlas-flex-row($spacing-s);
+  }
+
+  label {
+    @include atlas-flex-row($spacing-s);
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+    font-size: $font-ui-smaller;
+    color: var(--text-normal);
+  }
+
+  input {
+    @include atlas-text-input;
+    width: 5.5rem;
+    flex-shrink: 0;
+  }
+}

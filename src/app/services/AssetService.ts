@@ -57,6 +57,10 @@ export interface MapAsset extends BaseAsset {
   type: 'map';
   mapFilePath: string;
   thumbnailPath?: string;
+  /** How wide this map is on paper, in inches. Copied onto a scene made from it. */
+  paperWidthInches?: number;
+  /** How tall this map is on paper, in inches. Copied onto a scene made from it. */
+  paperHeightInches?: number;
 }
 
 export interface NoteAsset extends BaseAsset {
