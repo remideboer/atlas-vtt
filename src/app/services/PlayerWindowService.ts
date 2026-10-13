@@ -13,7 +13,7 @@ import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition
 import { t } from '../i18n';
 import { cannotRender, PlayerFrameMirror, type PlayerFrameSource } from './PlayerFrameMirror';
 import { framedCamera } from './playerFrame';
-import { presentedPlayerFrame } from './playerPresentation';
+import { cameraHeldForFreeze, playerViewOf, presentedPlayerFrame } from './playerPresentation';
 import { PlayerPresentationController } from './playerPresentationController';
 import type { Screen, Size } from '../types/playerFrame';
 import type { PresentedScene } from './presentedScene';
@@ -158,7 +158,31 @@ export class PlayerWindowService {
    * of the DM's pane, no longer reach them.
    */
   public freezeCamera(camera?: PlayerCameraState): void {
-    this.setFrozenCamera(camera ?? this.cameraPlayersSee());
+    this.setFrozenCamera(camera ?? this.cameraOfPicture() ?? this.cameraPlayersSee());
+  }
+
+  /**
+   * The camera that freezes the picture players are shown now, zoom lock and rotation included.
+   * The GM camera alone is a different picture once the player zoom is locked.
+   */
+  private cameraOfPicture(): PlayerCameraState | null {
+    const source = this.streamSource;
+    const canvas = this.playerCanvas();
+    const window = canvas ? this.windowScreen(canvas) : null;
+    const camera = source?.getCamera?.();
+    if (!source || !window || !camera || this.heldFrame || cannotRender(source)) return null;
+    this.presentation.noteDmCamera(camera);
+    const screen = source.getScreen?.();
+    const rotation = this.presentation.rotation;
+    const view = playerViewOf({
+      window,
+      camera,
+      gmScreen: screen,
+      rotation,
+      zoomLock: this.presentation.zoomLock(),
+      frozen: false,
+    });
+    return view ? cameraHeldForFreeze(view, rotation, camera.scale) : null;
   }
 
   /**

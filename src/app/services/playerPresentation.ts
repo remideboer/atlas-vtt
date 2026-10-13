@@ -115,37 +115,55 @@ export function offsetThroughDmZoom(
   };
 }
 
+/** What `presentedPlayerFrame` is asked, apart from the pane the picture is copied through. */
+export interface PlayerPicture {
+  window: Screen;
+  camera: PlayerCameraState;
+  gmScreen?: Size | undefined;
+  rotation: PlayerRotation;
+  zoomLock: ZoomLock | null;
+  frozen: boolean;
+}
+
+/**
+ * The world rectangle the player picture is fitted to. A frozen camera keeps its own rectangle.
+ * Zoom lock uses the DM centre plus the pan offset at the pinned scale. Otherwise the DM view
+ * is fitted, swapped at 90° and 270° so the whole view still shows.
+ */
+export function playerViewOf(input: PlayerPicture): WorldView | null {
+  const { window, camera, gmScreen, rotation, zoomLock, frozen } = input;
+  if (frozen || !zoomLock) {
+    const view = viewOf(camera, gmScreen);
+    return view ? viewFittedForRotation(view, rotation) : null;
+  }
+  return zoomLockedView(
+    window,
+    camera.centerX + zoomLock.offsetX,
+    camera.centerY + zoomLock.offsetY,
+    zoomLock.scale,
+  );
+}
+
+/**
+ * A camera whose frozen rendering is `view` again. The freeze stores the rectangle before the
+ * rotation fit, because showing it applies that fit once more.
+ */
+export function cameraHeldForFreeze(view: WorldView, rotation: PlayerRotation, scale: number): PlayerCameraState {
+  const held = viewFittedForRotation(view, rotation);
+  return { centerX: held.centerX, centerY: held.centerY, scale, width: held.width, height: held.height };
+}
+
 /**
  * The frame players are shown. A frozen camera keeps its rectangle and is fitted, rotation
  * included. Zoom lock uses the DM centre plus the pan offset at `zoomLock.scale`, and ignores
  * the DM zoom. Otherwise the DM view is fitted, swapped at 90° and 270° so the whole view still
  * shows.
  */
-export function presentedPlayerFrame(input: {
-  window: Screen;
-  pane?: Screen | undefined;
-  camera: PlayerCameraState;
-  gmScreen?: Size | undefined;
-  rotation: PlayerRotation;
-  zoomLock: ZoomLock | null;
-  frozen: boolean;
-}): PlayerFrame | null {
-  const { window, pane, camera, gmScreen, rotation, zoomLock, frozen } = input;
-  if (frozen || !zoomLock) {
-    const view = viewOf(camera, gmScreen);
-    if (!view) return null;
-    const frame = playerFrame(window, viewFittedForRotation(view, rotation), pane);
-    return frame ? withRotation(frame, rotation) : null;
-  }
-  const view = zoomLockedView(
-    window,
-    camera.centerX + zoomLock.offsetX,
-    camera.centerY + zoomLock.offsetY,
-    zoomLock.scale,
-  );
+export function presentedPlayerFrame(input: PlayerPicture & { pane?: Screen | undefined }): PlayerFrame | null {
+  const view = playerViewOf(input);
   if (!view) return null;
-  const frame = playerFrame(window, view, pane);
-  return frame ? withRotation(frame, rotation) : null;
+  const frame = playerFrame(input.window, view, input.pane);
+  return frame ? withRotation(frame, input.rotation) : null;
 }
 
 /** Zoom-lock fields of a saved player-window session. Missing or unusable values are off. */

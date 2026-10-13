@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { captureBeforeRender, frameCamera, type CameraTarget } from '../../src/app/pixi/playerSafeFrame';
 import {
+  cameraHeldForFreeze,
   offsetThroughDmZoom,
   panOffsetForKey,
+  playerViewOf,
   presentedPlayerFrame,
   readPlayerRotation,
   readZoomLockSession,
@@ -120,6 +122,25 @@ describe('player zoom lock', () => {
     expect(again?.centerY).toBe(held?.centerY);
     expect(again?.width).toBe(held?.width);
     expect(again?.height).toBe(held?.height);
+  });
+
+  it('freezes the picture players are shown, including a locked zoom and a quarter-turn', () => {
+    const zoomLock = { scale: 2, offsetX: 12, offsetY: -4 };
+    for (const rotation of [0, 90] as const) {
+      const picture = { window: WINDOW, camera: VIEW, gmScreen: { width: 400, height: 300 }, rotation, zoomLock, frozen: false };
+      const live = presentedPlayerFrame(picture);
+      const view = playerViewOf(picture);
+      const held = cameraHeldForFreeze(view!, rotation, VIEW.scale);
+      const frozen = presentedPlayerFrame({
+        window: WINDOW,
+        camera: held,
+        gmScreen: { width: 200, height: 100 },
+        rotation,
+        zoomLock: { scale: 9, offsetX: 400, offsetY: 400 },
+        frozen: true,
+      });
+      expect(frozen).toEqual(live);
+    }
   });
 
   it('lets a full freeze win over zoom lock', () => {

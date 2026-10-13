@@ -107,6 +107,25 @@ describe('player camera freeze', () => {
     expect(session).toMatchObject({ frozen: false, camera: { centerX: 900, centerY: 900, scale: 3 } });
   });
 
+  it('freezes the picture players are shown when their zoom is locked, and keeps it while the DM zooms', () => {
+    const { service, setDmCamera, nextFrame, lastFrame } = setup();
+    setDmCamera({ centerX: 100, centerY: 200, scale: 1 });
+    nextFrame();
+    expect(service.togglePlayerZoomLock()).toBe(true);
+    nextFrame();
+    setDmCamera({ centerX: 160, centerY: 260, scale: 2 });
+    nextFrame();
+    const before = lastFrame();
+
+    service.toggleCameraFreeze();
+    setDmCamera({ centerX: 900, centerY: 900, scale: 4 });
+    nextFrame();
+    nextFrame();
+
+    expect(lastFrame()).toEqual(before);
+    expect(shown(lastFrame())).toEqual(shown(before));
+  });
+
   it('keeps frozen players on the same picture when the DM\'s pane changes size', () => {
     const { service, resizePane, nextFrame, lastFrame } = setup();
     nextFrame();
