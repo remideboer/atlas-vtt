@@ -1,4 +1,5 @@
 import type { CellNumberFormat } from '../grid/cellNumbering';
+import type { MapOrientation } from '../grid/mapOrientation';
 import type { MapStretch } from '../grid/mapStretch';
 
 // Type definitions
@@ -40,6 +41,11 @@ export interface GridState {
    * offsets are in the stretched world. Unset draws the image as it is; read it with `readMapStretch`.
    */
   mapStretch?: MapStretch;
+  /**
+   * Quarter-turns the loaded map is shown turned, clockwise. Unset is level. Both views draw it;
+   * it is not the player window's own rotation and not the few degrees of `mapStretch`.
+   */
+  mapOrientation?: MapOrientation;
   /** Numbers every cell of the grid in this format; unset shows no numbers. */
   cellNumbers?: CellNumberFormat;
   /** Opacity of the cell numbers (0 to 1), separate from the grid lines; unset is `DEFAULT_CELL_NUMBER_OPACITY`. */

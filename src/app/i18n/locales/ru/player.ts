@@ -21,6 +21,7 @@ export const player: Translation = {
   'player.rotation270': '270°',
   'player.freezeCamera': 'Заморозить камеру',
   'player.unfreezeCamera': 'Разморозить камеру',
+  'player.rotateMap': 'Повернуть карту',
   'player.freezeZoom': 'Заморозить масштаб игроков',
   'player.zoomLocked': 'Масштаб игроков зафиксирован',
   'player.zoomUnlocked': 'Масштаб игроков свободен',

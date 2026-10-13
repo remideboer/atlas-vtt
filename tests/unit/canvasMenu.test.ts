@@ -5,6 +5,7 @@ import type { CanvasMenuActions } from '../../src/app/pixi/canvasMenu';
 function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
   return {
     rotation: 0,
+    mapOrientation: 0,
     zoomLocked: false,
     frozen: false,
     paused: false,
@@ -15,6 +16,7 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     unfreezeCamera: vi.fn(),
     toggleZoomLock: vi.fn(),
     setRotation: vi.fn(),
+    setMapOrientation: vi.fn(),
     toggleInitiative: vi.fn(),
     ...over,
   };
@@ -23,7 +25,7 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
 describe('blank canvas menu', () => {
   it('offers commands and the four rotation choices, with the active angle checked', () => {
     const menu = canvasMenuEntries(actions({ rotation: 90, zoomLocked: true, paused: true }));
-    expect(menu).toHaveLength(2);
+    expect(menu).toHaveLength(3);
     const commands = menu[0];
     const rotation = menu[1];
     expect(commands?.type).toBe('submenu');
@@ -39,19 +41,27 @@ describe('blank canvas menu', () => {
     if (pause?.type === 'item') expect(pause.checked).toBe(true);
     if (zoom?.type === 'item') expect(zoom.checked).toBe(true);
     if (unfreeze?.type === 'item') expect(unfreeze.disabled).toBe(true);
+    const map = menu[2];
+    if (map?.type !== 'submenu' || typeof map.children === 'function') throw new Error('map submenu');
+    expect(map.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([true, false, false, false]);
   });
 
-  it('unfreezes only while the camera is frozen', () => {
-    const menuActions = actions({ frozen: true });
+  it('unfreezes only while the camera is frozen and turns the map', () => {
+    const menuActions = actions({ frozen: true, mapOrientation: 180 });
     const menu = canvasMenuEntries(menuActions);
     const commands = menu[0];
+    const map = menu[2];
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands');
+    if (map?.type !== 'submenu' || typeof map.children === 'function') throw new Error('map');
     const unfreeze = commands.children[4];
     if (unfreeze?.type === 'item') {
       expect(unfreeze.disabled).toBe(false);
       unfreeze.onClick();
     }
     expect(menuActions.unfreezeCamera).toHaveBeenCalledOnce();
+    const quarter = map.children[1];
+    if (quarter?.type === 'item') quarter.onClick();
+    expect(menuActions.setMapOrientation).toHaveBeenCalledWith(90);
   });
 
   it('runs the command action and does not call a rotation that is already selected through the entry', () => {

@@ -6,6 +6,7 @@ import { MAP_THUMBNAIL_SIZE } from './services/MapThumbnailService';
 import type { PixiRendererOrchestrator } from './PixiRendererOrchestrator';
 import type { GridOptions } from './grid/GridSystem';
 import { parseGridColor } from './grid/gridContrastColor';
+import { readMapOrientation } from './grid/mapOrientation';
 import { readMapStretch, sameStretch } from './grid/mapStretch';
 import { cellNumberStyleOfGrid } from './grid/cellNumbering';
 import { MapImage } from './pixi/mapImage/MapImage';
@@ -71,6 +72,7 @@ async function loadAndDisplay(
   const mapImage = viewMapImage(app, renderer);
   if (mapImage) {
     shownBackground.set(mapImage, mapData.background ?? null);
+    mapImage.setOrientation(readMapOrientation(mapData.grid?.mapOrientation));
     await mapImage.load(image, readMapStretch(mapData.grid?.mapStretch));
     if (isSuperseded()) return null;
   }
@@ -145,14 +147,18 @@ function followBackground(app: App, store: ViewAtlasStore, mapImage: MapImage): 
  * (an alignment applied, its undo or redo), and says so with `onFollowed`. Returns the unsubscribe.
  */
 function followStretch(store: ViewAtlasStore, mapImage: MapImage, onFollowed: () => void): () => void {
-  return store.subscribe((state) => readMapStretch(state.grid?.mapStretch), (stretch) => {
+  return store.subscribe((state) => ({
+    stretch: readMapStretch(state.grid?.mapStretch),
+    orientation: readMapOrientation(state.grid?.mapOrientation),
+  }), ({ stretch, orientation }) => {
     const state = store.getState();
-    // A load shows its image with the stretch of its file.
+    // A load shows its image with the stretch and orientation of its file.
     if (!state.mapLoaded || state.isMapLoading) return;
     mapImage.setStretch(stretch);
+    mapImage.setOrientation(orientation);
     // The image may have been drawn this way already, as an alignment's preview: nothing changed on it then.
     onFollowed();
-  }, { equalityFn: sameStretch });
+  }, { equalityFn: (left, right) => sameStretch(left.stretch, right.stretch) && left.orientation === right.orientation });
 }
 
 /**

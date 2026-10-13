@@ -63,6 +63,7 @@ import type { MapImageChange } from './pixi/mapImage/mapImageView';
 import type { TileView } from './pixi/mapImage/levelOfDetail';
 import { frameView } from './services/playerFrameDemand';
 import { MapController } from './MapController';
+import { mapTurnMove, readMapOrientation, turnedGrid, type MapOrientation } from './grid/mapOrientation';
 import { NO_STRETCH, readMapStretch, sameStretch, type MapStretch } from './grid/mapStretch';
 import { showCamera } from './pixi/viewCamera';
 import { fitZoomRange } from './pixi/fitMapRect';
@@ -107,6 +108,7 @@ export class PixiRendererOrchestrator { // Renamed class
   private stopFollowingMapImage: (() => void) | null = null;
   /** The stretch of the map the zoom range was last fitted to. */
   private zoomFittedStretch: MapStretch = NO_STRETCH;
+  private zoomFittedOrientation: MapOrientation = 0;
   private obsApp: App;
   private eventBus: EventEmitter;
   private activeHoverLinkAnchorEl: HTMLElement | null = null;
@@ -647,8 +649,10 @@ export class PixiRendererOrchestrator { // Renamed class
   /** A map drawn with another stretch has another size than the one the load fitted the zoom range to. */
   private fitZoomRangeToStretch(): void {
     const stretch = this.mapImage?.mapStretch ?? NO_STRETCH;
-    if (sameStretch(stretch, this.zoomFittedStretch)) return;
+    const orientation = this.mapImage?.mapOrientation ?? 0;
+    if (sameStretch(stretch, this.zoomFittedStretch) && orientation === this.zoomFittedOrientation) return;
     this.zoomFittedStretch = stretch;
+    this.zoomFittedOrientation = orientation;
     const rect = this.getMapRect();
     if (this.viewport && rect) fitZoomRange(this.viewport, rect);
   }
@@ -692,6 +696,7 @@ export class PixiRendererOrchestrator { // Renamed class
 
     const grid = this.store.getState().grid;
     this.mapImage?.setStretch(readMapStretch(grid?.mapStretch));
+    this.mapImage?.setOrientation(readMapOrientation(grid?.mapOrientation));
     this.gridSystem.updateOptions({
       type: grid?.type ?? 'square',
       size: grid?.size || 50,
@@ -725,7 +730,7 @@ export class PixiRendererOrchestrator { // Renamed class
    * stage's own render, which puts the DM's frame back), the DM's frame is rendered again here.
    * Nothing is rendered or copied while the graphics context is lost.
    */
-  /** Right-click on empty map in the GM view: commands and player-view rotation. */
+  /** Right-click on empty map in the GM view: player commands and the map's quarter-turns. */
   private wireBlankContextMenu(): void {
     this.pixiAppManager.setBlankContextMenu((x, y) => {
       const state = this.store.getState();
@@ -735,6 +740,7 @@ export class PixiRendererOrchestrator { // Renamed class
       const viewport = this.pixiAppManager.getViewport();
       openContextMenuGlobal(canvasMenuEntries({
         rotation: presentation?.rotation ?? 0,
+        mapOrientation: readMapOrientation(state.grid?.mapOrientation),
         zoomLocked: presentation?.isZoomLocked() ?? false,
         frozen: players?.isFrozen() ?? false,
         paused: players?.isPlayerPaused() ?? false,
@@ -750,12 +756,29 @@ export class PixiRendererOrchestrator { // Renamed class
           if (players) players.setPlayerRotation(rotation);
           else savePlayerRotation(this.obsApp, rotation);
         },
+        setMapOrientation: (orientation) => { this.turnMap(orientation); },
         toggleInitiative: () => {
           const current = this.store.getState();
           current.setInitiativeTrackerOpen(!current.initiativeTrackerOpen);
         },
       }), { x, y });
     });
+  }
+
+  /**
+   * Turns the loaded map to `orientation` in one undo step. The image and everything that stands
+   * on it move together, so both views show the same turn. The player window's own rotation stays.
+   */
+  private turnMap(orientation: MapOrientation): void {
+    const state = this.store.getState();
+    const grid = state.grid;
+    const size = this.mapImage?.imageSize;
+    if (!grid || !size || !state.mapLoaded || state.isMapLoading) return;
+    const from = readMapOrientation(grid.mapOrientation);
+    if (from === orientation) return;
+    const stretch = readMapStretch(grid.mapStretch);
+    const move = mapTurnMove(size, stretch, from, orientation);
+    state.alignGrid(turnedGrid(grid, orientation, move), move);
   }
 
   public withPlayerSafeFrame(copy: (piece: FramePiece) => void, settings: AtlasSettings['localPlayerView'], frame: PlayerFrame, renderFollows = false): void {

@@ -1,3 +1,4 @@
+import { MAP_ORIENTATIONS, type MapOrientation } from '../grid/mapOrientation';
 import { t } from '../i18n';
 import type { ContextMenuEntry } from '../react/root/ContextMenuContext';
 import { PLAYER_ROTATIONS, type PlayerRotation } from '../services/playerPresentation';
@@ -5,6 +6,7 @@ import { PLAYER_ROTATIONS, type PlayerRotation } from '../services/playerPresent
 /** Actions the blank-canvas menu can run. Each is an existing Atlas action, not an Obsidian command id. */
 export interface CanvasMenuActions {
   rotation: PlayerRotation;
+  mapOrientation: MapOrientation;
   zoomLocked: boolean;
   frozen: boolean;
   paused: boolean;
@@ -15,6 +17,7 @@ export interface CanvasMenuActions {
   unfreezeCamera(): void;
   toggleZoomLock(): void;
   setRotation(rotation: PlayerRotation): void;
+  setMapOrientation(orientation: MapOrientation): void;
   toggleInitiative(): void;
 }
 
@@ -25,7 +28,7 @@ function angleLabel(rotation: PlayerRotation): string {
   return t('player.rotation270');
 }
 
-/** The blank-map menu: a short command list and the four player-view angles. */
+/** The blank-map menu: player commands, the player-view angles, and the map's own quarter-turns. */
 export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[] {
   const commands: ContextMenuEntry = {
     type: 'submenu',
@@ -76,5 +79,16 @@ export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[
       onClick: () => actions.setRotation(angle),
     })),
   };
-  return [commands, rotation];
+  const map: ContextMenuEntry = {
+    type: 'submenu',
+    label: t('player.rotateMap'),
+    icon: 'rotate-cw',
+    children: MAP_ORIENTATIONS.map((angle) => ({
+      type: 'item' as const,
+      label: angleLabel(angle),
+      checked: actions.mapOrientation === angle,
+      onClick: () => actions.setMapOrientation(angle),
+    })),
+  };
+  return [commands, rotation, map];
 }

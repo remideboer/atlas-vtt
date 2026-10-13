@@ -32,8 +32,12 @@ function movedFog(operation: FogOperation, move: MapMove): FogOperation {
   const centre = at({ x: rest.x + rest.width / 2, y: rest.y + rest.height / 2 });
   const right = at({ x: rest.x + rest.width, y: rest.y + rest.height / 2 });
   const bottom = at({ x: rest.x + rest.width / 2, y: rest.y + rest.height });
-  const width = 2 * Math.hypot(right.x - centre.x, right.y - centre.y);
-  const height = 2 * Math.hypot(bottom.x - centre.x, bottom.y - centre.y);
+  const rightSpan = Math.hypot(right.x - centre.x, right.y - centre.y);
+  const bottomSpan = Math.hypot(bottom.x - centre.x, bottom.y - centre.y);
+  // A quarter-turn stands the old right edge upright, so that side becomes the height.
+  const upright = Math.abs(right.x - centre.x) >= Math.abs(right.y - centre.y);
+  const width = 2 * (upright ? rightSpan : bottomSpan);
+  const height = 2 * (upright ? bottomSpan : rightSpan);
   return { ...rest, x: centre.x - width / 2, y: centre.y - height / 2, width, height };
 }
 
