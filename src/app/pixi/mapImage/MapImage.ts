@@ -10,6 +10,7 @@ import type { PixelRect } from './pyramid';
 import { isMapClosed } from './tileErrors';
 import { ResidentOverviews } from './residentOverviews';
 import { TileTextureCache } from './tileTextureCache';
+import { drawnMapStretch, type MapOrientation } from '../../grid/mapOrientation';
 import { imageToWorld, NO_STRETCH, sameStretch, turnedBox, type MapStretch } from '../../grid/mapStretch';
 
 /**
@@ -51,6 +52,8 @@ export class MapImage {
   private generation = 0;
   private destroyed = false;
   private stretch: MapStretch = NO_STRETCH;
+  /** Quarter-turns the image is shown turned, clockwise, on top of the alignment stretch. */
+  private orientation: MapOrientation = 0;
   /** Holds the tile layer inside `layer`, turned level about the image's centre; `layer` stretches it. */
   private readonly turned = new Container({ label: 'map-image-turned' });
   private readonly stopRestarts: () => void;
@@ -73,8 +76,9 @@ export class MapImage {
   /** The image in world units, as it is drawn; null before the first load and after `clear`. */
   get worldRect(): PixelRect | null {
     if (!this.shown) return null;
-    const { box } = turnedBox(this.shown.width, this.shown.height, this.stretch);
-    return { x: 0, y: 0, width: box.width * this.stretch.x, height: box.height * this.stretch.y };
+    const stretch = this.drawn();
+    const { box } = turnedBox(this.shown.width, this.shown.height, stretch);
+    return { x: 0, y: 0, width: box.width * stretch.x, height: box.height * stretch.y };
   }
 
   /** The image's own size in pixels, whatever its stretch; null before the first load and after `clear`. */
@@ -84,15 +88,21 @@ export class MapImage {
 
   /** The corners of an image that lies turned in its world rect, which then holds a little more than the image; null for a level one. */
   get outline(): Array<{ x: number; y: number }> | null {
-    const { shown, stretch } = this;
+    const { shown } = this;
+    const stretch = this.drawn();
     if (!shown || !stretch.rotation) return null;
     const { width, height } = shown;
     return [{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: height }, { x: 0, y: height }].map((corner) => imageToWorld(corner, { width, height }, stretch));
   }
 
-  /** How the image is drawn stretched. */
+  /** How the image is drawn stretched. The scene's quarter-turn is separate (`mapOrientation`). */
   get mapStretch(): MapStretch {
     return this.stretch;
+  }
+
+  /** Quarter-turns this image is shown turned, clockwise. */
+  get mapOrientation(): MapOrientation {
+    return this.orientation;
   }
 
   /**
@@ -108,10 +118,14 @@ export class MapImage {
   setStretch(stretch: MapStretch): void {
     if (this.destroyed || sameStretch(stretch, this.stretch)) return;
     this.stretch = stretch;
-    if (!this.shown) return;
-    this.place(this.shown);
-    this.deps.requestRender();
-    this.emit('image');
+    this.redraw();
+  }
+
+  /** Draws the shown image, and every one after it, turned by `orientation`. Level is `0`. */
+  setOrientation(orientation: MapOrientation): void {
+    if (this.destroyed || orientation === this.orientation) return;
+    this.orientation = orientation;
+    this.redraw();
   }
 
   /** Takes the image off, as when its scene could not be opened; `worldRect` is null until the next load. */
@@ -272,17 +286,29 @@ export class MapImage {
     this.emit('image');
   }
 
+  /** The alignment stretch plus the scene's quarter-turn, which is what `place` draws. */
+  private drawn(): MapStretch {
+    return drawnMapStretch(this.stretch, this.orientation);
+  }
+
+  private redraw(): void {
+    if (!this.shown) return;
+    this.place(this.shown);
+    this.deps.requestRender();
+    this.emit('image');
+  }
+
   /**
-   * Puts `shown` into the world as the stretch says: the tile layer turned level about the image's
-   * centre, the box that holds it then stretched from the world's origin, the world's size, and the
-   * demand regions, which the tile layer knows in image pixels.
+   * Puts `shown` into the world: the tile layer turned about the image's centre, the box that holds
+   * it stretched from the world's origin, and the demand regions, which the tile layer knows in image pixels.
    */
   private place(shown: Shown): void {
-    const { x, y } = this.stretch;
-    const { box, corner } = turnedBox(shown.width, shown.height, this.stretch);
+    const drawn = this.drawn();
+    const { x, y } = drawn;
+    const { box, corner } = turnedBox(shown.width, shown.height, drawn);
     this.turned.pivot.set(shown.width / 2, shown.height / 2);
     this.turned.position.set(shown.width / 2 - corner.x, shown.height / 2 - corner.y);
-    this.turned.rotation = (-(this.stretch.rotation ?? 0) * Math.PI) / 180;
+    this.turned.rotation = (-(drawn.rotation ?? 0) * Math.PI) / 180;
     this.layer.scale.set(x, y);
     // In the layer's own space, which the scale stretches.
     this.layer.boundsArea = new Rectangle(0, 0, box.width, box.height);
@@ -299,7 +325,7 @@ export class MapImage {
    * axes' detail. Of a turned image it is the upright box around the view, which holds a little more.
    */
   private onImage(view: TileView): TileView {
-    const { x, y, rotation } = this.stretch;
+    const { x, y, rotation } = this.drawn();
     if (x === 1 && y === 1 && !rotation) return view;
     const { rect } = view;
     const unstretched = { x: rect.x / x, y: rect.y / y, width: rect.width / x, height: rect.height / y };
@@ -307,7 +333,7 @@ export class MapImage {
     if (!rotation || !this.shown) return { rect: unstretched, worldPerScreenPixel };
 
     const { width, height } = this.shown;
-    const { cos, sin, corner } = turnedBox(width, height, this.stretch);
+    const { cos, sin, corner } = turnedBox(width, height, this.drawn());
     const xs: number[] = [];
     const ys: number[] = [];
     for (const [px, py] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) {

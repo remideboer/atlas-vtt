@@ -1,6 +1,7 @@
 import { Wheel } from 'pixi-viewport';
 import type { ClampZoom, IWheelOptions } from 'pixi-viewport';
 import type { Point } from 'pixi.js';
+import { isPlayerFrameCapture } from './playerSafeFrame';
 import { prefersReducedMotion } from '../utils/motion';
 
 /** Time constant of the zoom's exponential glide: 95% of the way is covered after three of these. */
@@ -48,6 +49,8 @@ export class SmoothWheelZoom extends Wheel {
   private appliedScale = 0;
 
   override wheel(event: WheelEvent): boolean {
+    // A player capture borrows this viewport. Sampling it would pin the zoom to the wrong place.
+    if (isPlayerFrameCapture()) return false;
     const pinch = event.ctrlKey && this.options.trackpadPinch;
     if (this.paused || pinch || !this.options.wheelZoom || !this.checkKeyPress()) {
       this.stop();
@@ -70,6 +73,7 @@ export class SmoothWheelZoom extends Wheel {
 
   /** pixi-viewport passes the frame's elapsed milliseconds, though `Wheel` declares no parameter. */
   override update(elapsed = this.parent.options.ticker.elapsedMS): void {
+    if (isPlayerFrameCapture()) return;
     if (this.targetScale === null || this.anchor === null) return;
     if (this.paused || this.parent.scale.x !== this.appliedScale) {
       this.stop();

@@ -5,6 +5,7 @@ import type { ViewAtlasState } from '../storeFactory';
 import type { AtlasSettings } from './SettingsService';
 import type { FramePiece, PlayerFrame, Screen } from '../types/playerFrame';
 import { playerFrame, viewOf } from './playerFrame';
+import { presentedPlayerFrame, type PlayerRotation, type ZoomLock } from './playerPresentation';
 import type { PlayerRollSources } from './playerRollSource';
 import { PlayerFrameDemand, type DemandRegions } from './playerFrameDemand';
 
@@ -85,6 +86,13 @@ export interface MirrorInputs {
    * `height`) keeps showing that rectangle; one without is centred in the DM's screen as it is now.
    */
   frozenCamera(): PlayerCameraState | null;
+  /** Clockwise quarter-turn of the player map. Absent is 0°. */
+  rotation?(): PlayerRotation;
+  /**
+   * Pinned player scale and a centre offset from the DM camera. Ignored while a full camera
+   * freeze is on. Absent is follow-the-DM zoom.
+   */
+  zoomLock?(): ZoomLock | null;
   settings(): PlayerViewSettings;
   /** Called after each live frame with the camera players saw it through. */
   onFrame(camera: PlayerCameraState | undefined): void;
@@ -232,10 +240,25 @@ export class PlayerFrameMirror {
    */
   private frameOf(source: PlayerFrameSource): PlayerFrame | null {
     const window = this.inputs.window();
-    const camera = this.cameraOf(source);
+    const frozen = this.inputs.frozenCamera();
+    const camera = frozen ?? source.getCamera?.();
+    if (!window || !camera) return null;
     const screen = source.getScreen?.();
-    const view = camera ? viewOf(camera, screen) : null;
-    return window && view ? playerFrame(window, view, screen) : null;
+    const rotation = this.inputs.rotation?.() ?? 0;
+    const zoomLock = this.inputs.zoomLock?.() ?? null;
+    if (rotation !== 0 || zoomLock) {
+      return presentedPlayerFrame({
+        window,
+        pane: screen,
+        camera,
+        gmScreen: screen,
+        rotation,
+        zoomLock,
+        frozen: frozen !== null,
+      });
+    }
+    const view = viewOf(camera, screen);
+    return view ? playerFrame(window, view, screen) : null;
   }
 
   /** Bring a live frame of `source`, rendered through `frames`, onto the players' canvas. */

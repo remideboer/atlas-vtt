@@ -5,6 +5,7 @@ const alias = {
   '@': '/src',
   src: '/src',
   obsidian: '/tests/mocks/obsidian.ts',
+  electron: '/tests/mocks/electronScreen.ts',
 };
 
 export default defineConfig({

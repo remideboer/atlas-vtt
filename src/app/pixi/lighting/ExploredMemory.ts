@@ -1,6 +1,8 @@
 import type { Renderer, Texture } from 'pixi.js';
 import type { StoreApi } from 'zustand/vanilla';
 import { editPolygons, type ExploredEdit } from '../../lighting/exploredEdits';
+import { orientationDelta, readMapOrientation } from '../../grid/mapOrientation';
+import { turnExploredMask } from '../../lighting/turnExploredMask';
 import type { HistorySnapshot } from '../../stores/history';
 import { forgetExploredEdits } from '../../stores/exploredEditHistory';
 import type { ViewState } from '../../types/viewState';
@@ -14,7 +16,7 @@ import { ExploredTexture } from './ExploredTexture';
 const EXPLORED_SAVE_DELAY = 2000;
 
 /** What the memory reads of its view's state and the two actions it calls; the tracked records let it trim the undo history (`forgetExploredEdits`). */
-export type ExploredMemoryState = HistorySnapshot & Pick<ViewState, 'mapPath' | 'isMapLoading' | 'exploredEdits'> & {
+export type ExploredMemoryState = HistorySnapshot & Pick<ViewState, 'mapPath' | 'isMapLoading' | 'exploredEdits' | 'exploredMask'> & {
   setExploredMask(dataUrl: string | null): void;
   setExploredEdits(count: number): void;
 };
@@ -70,7 +72,10 @@ export class ExploredMemory {
     this.steps = new ExploredSteps(deps.renderer);
     this.revision = deps.store.getState().exploredEdits;
     // Undo and redo move the count; an edit of this memory's own has moved `revision` along with it.
-    this.unsubscribe = deps.store.subscribe((state) => this.follow(state.exploredEdits, state.isMapLoading));
+    this.unsubscribe = deps.store.subscribe((state, previous) => {
+      this.follow(state.exploredEdits, state.isMapLoading);
+      this.followMapTurn(state, previous);
+    });
   }
 
   /** Sizes the memory to the map and loads the scene's saved mask unless the texture holds it. */
@@ -208,6 +213,27 @@ export class ExploredMemory {
     });
   }
 
+  /**
+   * A quarter-turn of the map moves this memory with it. The turn itself writes the new mask.
+   * Undo and redo restore the grid only, so the mask is turned by the same delta when the
+   * orientation moves on its own. A mask that is still loading is dropped.
+   */
+  private followMapTurn(state: ExploredMemoryState, previous: ExploredMemoryState): void {
+    if (state.isMapLoading || previous.isMapLoading) return;
+    const from = readMapOrientation(storedOrientation(previous.grid));
+    const to = readMapOrientation(storedOrientation(state.grid));
+    if (from === to || state.exploredMask !== previous.exploredMask) return;
+    const quarter = orientationDelta(from, to);
+    if (quarter === 0) return;
+    if (!this.isMemory()) {
+      state.setExploredMask(null);
+      return;
+    }
+    this.save();
+    const mask = this.deps.store.getState().exploredMask;
+    state.setExploredMask(turnExploredMask(mask, quarter));
+  }
+
   /** The texture holds the scene's memory: its mask is in, and no lost context took it. */
   private isMemory(): boolean {
     return !!this.texture && this.ready && !this.contextLost;
@@ -271,4 +297,9 @@ export class ExploredMemory {
     this.loadedMask = saveExploredMask(this.texture.toCanvas());
     this.deps.store.getState().setExploredMask(this.loadedMask);
   }
+}
+
+function storedOrientation(grid: unknown): unknown {
+  if (typeof grid !== 'object' || grid === null || !('mapOrientation' in grid)) return undefined;
+  return grid.mapOrientation;
 }

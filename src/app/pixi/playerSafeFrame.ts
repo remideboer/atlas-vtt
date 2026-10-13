@@ -2,6 +2,23 @@ import type { PlayerCameraState } from '../types/playerCamera';
 import type { PlayerFrame, Size } from '../types/playerFrame';
 import type { Perception } from '../vision/perception';
 
+/** How many player-frame captures are borrowing the DM viewport right now. */
+let playerFrameCaptures = 0;
+
+/** True while a player frame has the DM viewport's transform. Wheel zoom must not sample it. */
+export function isPlayerFrameCapture(): boolean {
+  return playerFrameCaptures > 0;
+}
+
+function duringPlayerCapture(run: () => void): void {
+  playerFrameCaptures += 1;
+  try {
+    run();
+  } finally {
+    playerFrameCaptures -= 1;
+  }
+}
+
 /** Anything whose `visible` flag decides whether it is part of the next render. */
 export interface HideableLayer {
   visible: boolean;
@@ -79,6 +96,9 @@ export function gmTokenLayers(
 export interface CameraTarget {
   readonly position: { x: number; y: number; set(x: number, y: number): void };
   readonly scale: { x: number; y: number; set(x: number, y: number): void };
+  /** Radians, clockwise on screen. Restored with the DM camera after a capture. */
+  rotation?: number;
+  pivot?: { x: number; y: number; set(x: number, y: number): void };
 }
 
 /**
@@ -87,7 +107,7 @@ export interface CameraTarget {
  */
 export interface PlayerFrameCamera {
   target: CameraTarget;
-  camera: Pick<PlayerCameraState, 'centerX' | 'centerY' | 'scale'>;
+  camera: Pick<PlayerCameraState, 'centerX' | 'centerY' | 'scale'> & { rotation?: 0 | 90 | 180 | 270 };
   screen: Size;
 }
 
@@ -103,14 +123,29 @@ export function frameCamera(target: CameraTarget, frame: PlayerFrame): PlayerFra
 function applyCamera({ target, camera, screen }: PlayerFrameCamera): () => void {
   const { x, y } = target.position;
   const { x: scaleX, y: scaleY } = target.scale;
+  const previousRotation = target.rotation;
+  const pivot = target.pivot;
+  const pivotX = pivot?.x;
+  const pivotY = pivot?.y;
+  const angle = camera.rotation ?? 0;
   target.scale.set(camera.scale, camera.scale);
-  target.position.set(
-    screen.width / 2 - camera.centerX * camera.scale,
-    screen.height / 2 - camera.centerY * camera.scale,
-  );
+  if (angle !== 0 && pivot && previousRotation !== undefined) {
+    // Rotate about the framed world point, which stays in the middle of the player frame.
+    pivot.set(camera.centerX, camera.centerY);
+    target.position.set(screen.width / 2, screen.height / 2);
+    target.rotation = (angle * Math.PI) / 180;
+  } else {
+    if (previousRotation !== undefined) target.rotation = 0;
+    target.position.set(
+      screen.width / 2 - camera.centerX * camera.scale,
+      screen.height / 2 - camera.centerY * camera.scale,
+    );
+  }
   return (): void => {
     target.scale.set(scaleX, scaleY);
     target.position.set(x, y);
+    if (previousRotation !== undefined) target.rotation = previousRotation;
+    if (pivot && pivotX !== undefined && pivotY !== undefined) pivot.set(pivotX, pivotY);
   };
 }
 
@@ -149,18 +184,20 @@ export function captureWithLayerVisibility(
   capture: () => void,
   camera?: PlayerFrameCamera,
 ): void {
-  const { differs, restore } = applyPlayerFrame(layers, camera);
-  if (!differs) {
-    capture();
-    return;
-  }
-  try {
-    render();
-    capture();
-  } finally {
-    restore();
-    render();
-  }
+  duringPlayerCapture(() => {
+    const { differs, restore } = applyPlayerFrame(layers, camera);
+    if (!differs) {
+      capture();
+      return;
+    }
+    try {
+      render();
+      capture();
+    } finally {
+      restore();
+      render();
+    }
+  });
 }
 
 /**
@@ -174,11 +211,13 @@ export function captureBeforeRender(
   capture: () => void,
   camera?: PlayerFrameCamera,
 ): void {
-  const { restore } = applyPlayerFrame(layers, camera);
-  try {
-    render();
-    capture();
-  } finally {
-    restore();
-  }
+  duringPlayerCapture(() => {
+    const { restore } = applyPlayerFrame(layers, camera);
+    try {
+      render();
+      capture();
+    } finally {
+      restore();
+    }
+  });
 }

@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { AtlasUIContext } from '../react/root/AtlasUIContext';
 import { SettingsService } from '../services/SettingsService';
 import { availableHotkeys, canRunMapHotkeys, DEFAULT_MAP_HOTKEYS, formatHotkey, matchesMapHotkey, type HeldWidgetHotkeyId, type MapHotkeyId } from './mapHotkeys';
+import { PlayerWindowService } from '../services/PlayerWindowService';
 
 export function useAtlasSettings(explicit?: SettingsService): SettingsService | undefined {
   const context = useContext(AtlasUIContext);
@@ -33,6 +34,10 @@ export function useMapHotkeys(handlers: Partial<Record<Exclude<MapHotkeyId, Held
   useEffect(() => {
     const handle = (event: KeyboardEvent): void => {
       if (!canRunMapHotkeys(event, id)) return;
+      if (nudgePlayerFrame(event)) {
+        event.preventDefault();
+        return;
+      }
       const action = availableHotkeys(false, feature => settings?.isExperimentalOn(feature) ?? false).find(action => current.current[action.id] && matchesMapHotkey(event, action.id, settings));
       if (!action || ('yieldsToTextSelection' in action && hasTextSelection(event))) return;
       event.preventDefault();
@@ -41,4 +46,12 @@ export function useMapHotkeys(handlers: Partial<Record<Exclude<MapHotkeyId, Held
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
   }, [id, settings]);
+}
+
+/** Arrow keys move the player frame while its zoom is locked. A menu or modifier keeps them. */
+function nudgePlayerFrame(event: KeyboardEvent): boolean {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest('[role="menu"], [role="menuitem"]')) return false;
+  return PlayerWindowService.getInstance()?.nudgePlayerFrame(event.key) ?? false;
 }

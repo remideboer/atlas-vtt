@@ -26,6 +26,8 @@ export interface PlayerFrame extends Size {
   centerX: number;
   centerY: number;
   scale: number;
+  /** Clockwise quarter-turn of the player map. Absent is 0°. */
+  rotation?: 0 | 90 | 180 | 270;
 }
 
 /**
