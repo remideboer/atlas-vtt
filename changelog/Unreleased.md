@@ -4,6 +4,7 @@
 - A map can be given a width and height in inches when it is imported and while its grid is aligned. Actual size uses that paper size, also when the map has no grid, and a grid cell then measures the share of the paper it covers.
 - The fog tool can cover the whole map, so a scene can start fully hidden and then be revealed.
 - The toolbar shows or hides the scene grid, without opening the command palette.
+- The Atlas dashboard opens from a home icon on the left ribbon.
 
 ## Fixed
 

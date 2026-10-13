@@ -12,10 +12,11 @@ import { registerCommands, type CommandDependencies } from '../../src/app/plugin
 describe('Obsidian panel toggle commands', () => {
   it('keeps supported commands available without retired features', () => {
     const commands: Command[] = [];
+    const addRibbonIcon = vi.fn();
     const plugin = {
       app: { workspace: {} },
       addCommand: (command: Command) => commands.push(command),
-      addRibbonIcon: vi.fn(),
+      addRibbonIcon,
     } as unknown as Plugin;
 
     registerCommands(plugin, {} as CommandDependencies);
@@ -24,6 +25,7 @@ describe('Obsidian panel toggle commands', () => {
     expect(ids).toEqual(expect.arrayContaining([
       'open-dashboard', 'open-scene-browser', 'import-statblock-tokens',
     ]));
+    expect(addRibbonIcon).toHaveBeenCalledWith('home', expect.any(String), expect.any(Function));
     expect(ids).not.toContain('open-music-player');
     expect(ids).not.toContain('optimize-vault-images');
     expect(ids).not.toContain('optimize-folder-images');

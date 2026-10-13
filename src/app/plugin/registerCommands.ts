@@ -23,9 +23,15 @@ function isImageFile(file: TFile): boolean {
 
 async function openDashboard(plugin: Plugin): Promise<void> {
   try {
-    const leaf = plugin.app.workspace.getLeaf(true);
+    const { workspace } = plugin.app;
+    const existing = workspace.getLeavesOfType(DASHBOARD_VIEW_TYPE)[0];
+    if (existing) {
+      await workspace.revealLeaf(existing);
+      return;
+    }
+    const leaf = workspace.getLeaf('tab');
     await leaf.setViewState({ type: DASHBOARD_VIEW_TYPE, state: {} });
-    plugin.app.workspace.setActiveLeaf(leaf);
+    workspace.setActiveLeaf(leaf);
   } catch (error) {
     console.error('[Atlas] Error opening dashboard:', error);
     new Notice(t('notice.dashboardOpenFailed'));
@@ -92,6 +98,8 @@ function registerMapCommands(plugin: Plugin, deps: CommandDependencies): void {
     name: t('command.openDashboard'),
     callback: () => void openDashboard(plugin),
   });
+
+  plugin.addRibbonIcon('home', t('command.openDashboard'), () => { void openDashboard(plugin); });
 
   plugin.addCommand({
     id: 'open-scene-browser',
