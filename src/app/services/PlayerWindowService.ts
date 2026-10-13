@@ -230,8 +230,8 @@ export class PlayerWindowService {
   }
 
   /**
-   * The camera that freezes the picture players are shown now, zoom lock and rotation included.
-   * The GM camera alone is a different picture once the player zoom is locked.
+   * The camera that freezes the picture players are shown now: actual size, zoom lock and
+   * rotation, the same framing the window is rendering. The GM camera alone is a different picture.
    */
   private cameraOfPicture(): PlayerCameraState | null {
     const source = this.streamSource;
@@ -239,7 +239,6 @@ export class PlayerWindowService {
     const window = canvas ? this.windowScreen(canvas) : null;
     const camera = source?.getCamera?.();
     if (!source || !window || !camera || this.heldFrame || cannotRender(source)) return null;
-    this.presentation.noteDmCamera(camera);
     const screen = source.getScreen?.();
     const rotation = this.presentation.rotation;
     const view = playerViewOf({
@@ -247,7 +246,7 @@ export class PlayerWindowService {
       camera,
       gmScreen: screen,
       rotation,
-      zoomLock: this.presentation.zoomLock(),
+      zoomLock: this.frameLock(),
       frozen: false,
     });
     return view ? cameraHeldForFreeze(view, rotation, camera.scale) : null;

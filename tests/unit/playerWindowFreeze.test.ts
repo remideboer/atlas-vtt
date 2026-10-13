@@ -9,6 +9,7 @@ import { SettingsService } from '../../src/app/services/SettingsService';
 import { playerWindowStore } from '../../src/app/stores/playerWindowStore';
 import type { PlayerFrame, Screen } from '../../src/app/types/playerFrame';
 import { createInMemoryApp } from '../mocks/inMemoryVault';
+import { MANUAL_DISPLAY_ID, savePlayerScreen } from '../../src/app/player/playerScreens';
 import { framePiece, sizePlayerWindow } from '../mocks/playerFrameSource';
 
 vi.mock('../../src/app/atlas-view', () => ({ AtlasView: class {}, ATLAS_VIEW_TYPE: 'atlas-vtt' }));
@@ -38,14 +39,19 @@ function shown(frame: PlayerFrame): number[] {
 }
 
 /** A player window of 1280 × 720 on a view whose pane measures 800 × 600. */
-function setup({ attach: attachNow = true } = {}): Harness {
+function setup({ attach: attachNow = true, gridSize }: { attach?: boolean; gridSize?: number } = {}): Harness {
   let frame: FrameRequestCallback | null = null;
   const requestAnimationFrame = (callback: FrameRequestCallback): number => { frame = callback; return 1; };
   const drawImage = vi.fn();
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ clearRect: vi.fn(), drawImage } as never);
   sizePlayerWindow();
   const { app } = createInMemoryApp();
-  const store = createStore(() => ({})) as StoreApi<ViewAtlasState>;
+  if (gridSize !== undefined) {
+    savePlayerScreen(app, MANUAL_DISPLAY_ID, {
+      cellInches: 1, crisp: false, calibration: 1, diagonalInches: 27, widthPx: 2560, heightPx: 1440,
+    });
+  }
+  const store = createStore(() => (gridSize === undefined ? {} : { grid: { size: gridSize } })) as StoreApi<ViewAtlasState>;
   const service = new PlayerWindowService(app, store, new SettingsService(app));
   const doc = document.implementation.createHTMLDocument();
   Object.defineProperty(doc, 'readyState', { value: 'complete' });
@@ -116,6 +122,28 @@ describe('player camera freeze', () => {
     setDmCamera({ centerX: 160, centerY: 260, scale: 2 });
     nextFrame();
     const before = lastFrame();
+
+    service.toggleCameraFreeze();
+    setDmCamera({ centerX: 900, centerY: 900, scale: 4 });
+    nextFrame();
+    nextFrame();
+
+    expect(lastFrame()).toEqual(before);
+    expect(shown(lastFrame())).toEqual(shown(before));
+  });
+
+  it('freezes the picture on the player screen at actual size, and keeps it while the DM zooms', () => {
+    const { service, setDmCamera, nextFrame, lastFrame } = setup({ gridSize: 70 });
+    setDmCamera({ centerX: 100, centerY: 200, scale: 1 });
+    nextFrame();
+    service.playerPresentation().setActualSize(true);
+    nextFrame();
+    setDmCamera({ centerX: 160, centerY: 260, scale: 2 });
+    nextFrame();
+    const before = lastFrame();
+    const ppi = Math.hypot(2560, 1440) / 27;
+    expect(shown(before)[2]).toBeCloseTo(1280 / (ppi / 70), 4);
+    expect(shown(before)[0] + shown(before)[2] / 2).toBeCloseTo(100, 4);
 
     service.toggleCameraFreeze();
     setDmCamera({ centerX: 900, centerY: 900, scale: 4 });
