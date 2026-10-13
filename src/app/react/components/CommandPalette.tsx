@@ -26,7 +26,6 @@ import {
   History,
 } from 'lucide-react';
 import { CoinIcon } from './CoinIcon';
-import { Notice } from 'obsidian';
 import { useAtlasStore, useViewStoreHook } from '../ViewStoreContext';
 import { useAtlasUI } from '../root/AtlasUIContext';
 import { openPlayerWindow, presentActiveTab } from '../../services/PlayerWindowPresenter';
