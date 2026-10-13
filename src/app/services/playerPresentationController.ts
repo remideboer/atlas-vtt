@@ -2,6 +2,7 @@ import type { App } from 'obsidian';
 import { loadPlayerRotation, savePlayerRotation } from './deviceSettings';
 import {
   isArrowKey,
+  offsetThroughDmZoom,
   panOffsetForKey,
   readZoomLockSession,
   type ArrowKey,
@@ -21,6 +22,8 @@ export class PlayerPresentationController {
   private pinnedScale: number | null = null;
   private offsetX = 0;
   private offsetY = 0;
+  /** The DM camera the offset was last measured against. A zoom moves it; a pan does not change its scale. */
+  private dmCamera: { centerX: number; centerY: number; scale: number } | null = null;
 
   constructor(
     private readonly storage: Pick<App, 'loadLocalStorage' | 'saveLocalStorage'>,
@@ -32,6 +35,24 @@ export class PlayerPresentationController {
   zoomLock(): ZoomLock | null {
     if (!this.zoomLocked || this.pinnedScale === null) return null;
     return { scale: this.pinnedScale, offsetX: this.offsetX, offsetY: this.offsetY };
+  }
+
+  /**
+   * Note the live DM camera. While zoom is locked, a change of its scale is a zoom: the player
+   * centre stays, and the offset absorbs the centre the zoom moved. A pan (the same scale) is
+   * left for the frame to follow.
+   */
+  noteDmCamera(camera: { centerX: number; centerY: number; scale: number }): void {
+    if (!this.isZoomLocked()) {
+      this.dmCamera = null;
+      return;
+    }
+    const next = { centerX: camera.centerX, centerY: camera.centerY, scale: camera.scale };
+    if (!Number.isFinite(next.centerX) || !Number.isFinite(next.centerY) || !Number.isFinite(next.scale)) return;
+    const offset = offsetThroughDmZoom({ x: this.offsetX, y: this.offsetY }, this.dmCamera, next);
+    this.dmCamera = next;
+    this.offsetX = offset.x;
+    this.offsetY = offset.y;
   }
 
   isZoomLocked(): boolean {
@@ -56,6 +77,7 @@ export class PlayerPresentationController {
       this.pinnedScale = null;
       this.offsetX = 0;
       this.offsetY = 0;
+      this.dmCamera = null;
       this.onChange();
       return false;
     }
@@ -64,6 +86,7 @@ export class PlayerPresentationController {
     this.pinnedScale = scale;
     this.offsetX = 0;
     this.offsetY = 0;
+    this.dmCamera = null;
     this.onChange();
     return true;
   }
@@ -84,6 +107,7 @@ export class PlayerPresentationController {
     this.pinnedScale = saved.pinnedScale;
     this.offsetX = saved.panX;
     this.offsetY = saved.panY;
+    this.dmCamera = null;
   }
 
   sessionFields(): { zoomLocked: boolean; panX: number; panY: number; pinnedScale?: number } {

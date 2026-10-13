@@ -554,7 +554,13 @@ export class PlayerWindowService {
       heldFrame: () => this.heldFrame,
       frozenCamera: () => this.frozenCamera,
       rotation: () => this.presentation.rotation,
-      zoomLock: () => this.presentation.zoomLock(),
+      zoomLock: () => {
+        if (this.frozenCamera === null) {
+          const camera = this.streamSource?.getCamera?.();
+          if (camera) this.presentation.noteDmCamera(camera);
+        }
+        return this.presentation.zoomLock();
+      },
       settings: () => this.settingsService.getLocalPlayerViewSettings(),
       onFrame: (camera) => this.recordPlayerCamera(camera),
     });

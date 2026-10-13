@@ -98,6 +98,24 @@ function withRotation(frame: PlayerFrame, rotation: PlayerRotation): PlayerFrame
 }
 
 /**
+ * The pan offset after the DM camera moves from `previous` to `next`. A zoom moves the DM
+ * centre to keep the cursor still; that centre change is taken out of the offset, so the player
+ * picture stays where it is. A pan leaves the DM scale alone and the offset stays, so the
+ * picture follows.
+ */
+export function offsetThroughDmZoom(
+  offset: { x: number; y: number },
+  previous: { centerX: number; centerY: number; scale: number } | null,
+  next: { centerX: number; centerY: number; scale: number },
+): { x: number; y: number } {
+  if (!previous || previous.scale === next.scale) return offset;
+  return {
+    x: offset.x - (next.centerX - previous.centerX),
+    y: offset.y - (next.centerY - previous.centerY),
+  };
+}
+
+/**
  * The frame players are shown. A frozen camera keeps its rectangle and is fitted, rotation
  * included. Zoom lock uses the DM centre plus the pan offset at `zoomLock.scale`, and ignores
  * the DM zoom. Otherwise the DM view is fitted, swapped at 90° and 270° so the whole view still

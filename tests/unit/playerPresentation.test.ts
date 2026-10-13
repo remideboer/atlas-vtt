@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captureBeforeRender, frameCamera, type CameraTarget } from '../../src/app/pixi/playerSafeFrame';
 import {
+  offsetThroughDmZoom,
   panOffsetForKey,
   presentedPlayerFrame,
   readPlayerRotation,
@@ -67,6 +68,27 @@ describe('player zoom lock', () => {
     expect(panned?.scale).toBeCloseTo(2, 5);
     expect(panned?.centerX).toBe(150);
     expect(panned?.centerY).toBe(80);
+  });
+
+  it('keeps the player centre when the DM zooms and follows when the DM pans', () => {
+    const offset = { x: 12, y: -4 };
+    const before = { centerX: 100, centerY: 40, scale: 1 };
+    const zoomed = { centerX: 160, centerY: 70, scale: 2 };
+    const held = offsetThroughDmZoom(offset, before, zoomed);
+    expect(zoomed.centerX + held.x).toBe(before.centerX + offset.x);
+    expect(zoomed.centerY + held.y).toBe(before.centerY + offset.y);
+    const panned = { centerX: 180, centerY: 90, scale: 2 };
+    expect(offsetThroughDmZoom(held, zoomed, panned)).toEqual(held);
+    const frame = presentedPlayerFrame({
+      window: WINDOW,
+      camera: { ...VIEW, centerX: zoomed.centerX, centerY: zoomed.centerY, scale: zoomed.scale },
+      rotation: 0,
+      zoomLock: { scale: 2, offsetX: held.x, offsetY: held.y },
+      frozen: false,
+    });
+    expect(frame?.centerX).toBe(before.centerX + offset.x);
+    expect(frame?.centerY).toBe(before.centerY + offset.y);
+    expect(frame?.scale).toBeCloseTo(2, 5);
   });
 
   it('adds the pan offset to the DM centre', () => {
