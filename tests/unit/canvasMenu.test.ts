@@ -9,7 +9,10 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     zoomLocked: false,
     frozen: false,
     paused: false,
+    actualSize: false,
     sendMap: vi.fn(),
+    sendActualSize: vi.fn(),
+    openScreenSetup: vi.fn(),
     openPlayerWindow: vi.fn(),
     togglePause: vi.fn(),
     toggleFreeze: vi.fn(),
@@ -33,9 +36,9 @@ describe('blank canvas menu', () => {
     if (rotation?.type !== 'submenu' || typeof rotation.children === 'function') throw new Error('rotation submenu');
     expect(rotation.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([false, true, false, false]);
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands submenu');
-    const pause = commands.children[2];
-    const unfreeze = commands.children[4];
-    const zoom = commands.children[5];
+    const pause = commands.children[4];
+    const unfreeze = commands.children[6];
+    const zoom = commands.children[7];
     expect(pause?.type).toBe('item');
     expect(zoom?.type).toBe('item');
     if (pause?.type === 'item') expect(pause.checked).toBe(true);
@@ -53,7 +56,7 @@ describe('blank canvas menu', () => {
     const map = menu[2];
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands');
     if (map?.type !== 'submenu' || typeof map.children === 'function') throw new Error('map');
-    const unfreeze = commands.children[4];
+    const unfreeze = commands.children[6];
     if (unfreeze?.type === 'item') {
       expect(unfreeze.disabled).toBe(false);
       unfreeze.onClick();
@@ -72,8 +75,23 @@ describe('blank canvas menu', () => {
     const send = commands.children[0];
     if (send?.type === 'item') send.onClick();
     expect(menuActions.sendMap).toHaveBeenCalledOnce();
-    const pause = commands.children[2];
+    const pause = commands.children[4];
     if (pause?.type === 'item') pause.onClick();
     expect(menuActions.togglePause).toHaveBeenCalledOnce();
+    const actual = commands.children[1];
+    if (actual?.type === 'item') actual.onClick();
+    expect(menuActions.sendActualSize).toHaveBeenCalledOnce();
+  });
+
+  it('marks actual size when it is on and opens the screen setup', () => {
+    const menuActions = actions({ actualSize: true });
+    const menu = canvasMenuEntries(menuActions);
+    const commands = menu[0];
+    if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands');
+    const actual = commands.children[1];
+    const setup = commands.children[2];
+    if (actual?.type === 'item') expect(actual.checked).toBe(true);
+    if (setup?.type === 'item') setup.onClick();
+    expect(menuActions.openScreenSetup).toHaveBeenCalledOnce();
   });
 });

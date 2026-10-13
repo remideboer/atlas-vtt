@@ -10,7 +10,10 @@ export interface CanvasMenuActions {
   zoomLocked: boolean;
   frozen: boolean;
   paused: boolean;
+  actualSize: boolean;
   sendMap(): void;
+  sendActualSize(): void;
+  openScreenSetup(): void;
   openPlayerWindow(): void;
   togglePause(): void;
   toggleFreeze(): void;
@@ -36,6 +39,14 @@ export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[
     icon: 'terminal',
     children: [
       { type: 'item', label: t('command.sendMapToPlayerView'), icon: 'monitor', onClick: () => actions.sendMap() },
+      {
+        type: 'item',
+        label: t('player.sendActualSize'),
+        icon: 'ruler',
+        checked: actions.actualSize,
+        onClick: () => actions.sendActualSize(),
+      },
+      { type: 'item', label: t('player.screenSetup'), icon: 'monitor', onClick: () => actions.openScreenSetup() },
       { type: 'item', label: t('command.openPlayerWindow'), icon: 'popup-open', onClick: () => actions.openPlayerWindow() },
       {
         type: 'item',

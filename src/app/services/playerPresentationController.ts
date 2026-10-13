@@ -19,6 +19,7 @@ import type { Size } from '../types/playerFrame';
 export class PlayerPresentationController {
   rotation: PlayerRotation;
   private zoomLocked = false;
+  private actualSize = false;
   private pinnedScale: number | null = null;
   private offsetX = 0;
   private offsetY = 0;
@@ -38,12 +39,12 @@ export class PlayerPresentationController {
   }
 
   /**
-   * Note the live DM camera. While zoom is locked, a change of its scale is a zoom: the player
-   * centre stays, and the offset absorbs the centre the zoom moved. A pan (the same scale) is
-   * left for the frame to follow.
+   * Note the live DM camera. While zoom is locked or the picture is at actual size, a change of
+   * its scale is a zoom: the player centre stays, and the offset absorbs the centre the zoom
+   * moved. A pan (the same scale) is left for the frame to follow.
    */
   noteDmCamera(camera: { centerX: number; centerY: number; scale: number }): void {
-    if (!this.isZoomLocked()) {
+    if (!this.holdsPan()) {
       this.dmCamera = null;
       return;
     }
@@ -57,6 +58,31 @@ export class PlayerPresentationController {
 
   isZoomLocked(): boolean {
     return this.zoomLock() !== null;
+  }
+
+  isActualSize(): boolean {
+    return this.actualSize;
+  }
+
+  /** The pan offset shared by zoom lock and actual size. */
+  pan(): { x: number; y: number } {
+    return { x: this.offsetX, y: this.offsetY };
+  }
+
+  /** Actual size or a zoom lock is holding the player centre against a DM zoom. */
+  holdsPan(): boolean {
+    return this.actualSize || this.isZoomLocked();
+  }
+
+  /**
+   * Turn actual size on or off. The pan offset stays, so the picture keeps its centre. The
+   * scale itself is computed from the screen each frame, not stored here.
+   */
+  setActualSize(on: boolean): void {
+    if (this.actualSize === on) return;
+    this.actualSize = on;
+    this.dmCamera = null;
+    this.onChange();
   }
 
   /** Selecting the angle already shown does nothing. */
@@ -75,26 +101,29 @@ export class PlayerPresentationController {
     if (this.isZoomLocked()) {
       this.zoomLocked = false;
       this.pinnedScale = null;
-      this.offsetX = 0;
-      this.offsetY = 0;
-      this.dmCamera = null;
+      if (!this.actualSize) {
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.dmCamera = null;
+      }
       this.onChange();
       return false;
     }
     if (scale === null || !Number.isFinite(scale) || scale <= 0) return false;
     this.zoomLocked = true;
     this.pinnedScale = scale;
-    this.offsetX = 0;
-    this.offsetY = 0;
-    this.dmCamera = null;
+    if (!this.actualSize) {
+      this.offsetX = 0;
+      this.offsetY = 0;
+      this.dmCamera = null;
+    }
     this.onChange();
     return true;
   }
 
-  /** Move the player centre by one step. No change while zoom lock is off. */
+  /** Move the player centre by one step. No change while nothing is holding the centre. */
   nudge(key: ArrowKey, extent: Size): void {
-    const lock = this.zoomLock();
-    if (!lock) return;
+    if (!this.holdsPan()) return;
     const step = panOffsetForKey(extent, this.rotation, key);
     this.offsetX += step.x;
     this.offsetY += step.y;
@@ -107,16 +136,17 @@ export class PlayerPresentationController {
     this.pinnedScale = saved.pinnedScale;
     this.offsetX = saved.panX;
     this.offsetY = saved.panY;
+    this.actualSize = 'actualSize' in session && session.actualSize === true;
     this.dmCamera = null;
   }
 
-  sessionFields(): { zoomLocked: boolean; panX: number; panY: number; pinnedScale?: number } {
-    const fields = { zoomLocked: this.isZoomLocked(), panX: this.offsetX, panY: this.offsetY };
+  sessionFields(): { zoomLocked: boolean; panX: number; panY: number; actualSize: boolean; pinnedScale?: number } {
+    const fields = { zoomLocked: this.isZoomLocked(), panX: this.offsetX, panY: this.offsetY, actualSize: this.actualSize };
     return this.isZoomLocked() && this.pinnedScale !== null ? { ...fields, pinnedScale: this.pinnedScale } : fields;
   }
 
   nudgeKey(key: string, extent: Size): boolean {
-    if (!isArrowKey(key) || !this.isZoomLocked()) return false;
+    if (!isArrowKey(key) || !this.holdsPan()) return false;
     this.nudge(key, extent);
     return true;
   }

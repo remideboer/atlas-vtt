@@ -13,6 +13,21 @@ body.atlas-player-window {
   -webkit-user-select: none;
   user-select: none;
 
+  &.atlas-player-window--crisp #atlas-player-canvas {
+    image-rendering: pixelated;
+  }
+
+  .atlas-player-size-square {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    border: 2px solid #fff;
+    pointer-events: none;
+    z-index: 5;
+  }
+
   #atlas-player-canvas {
     position: absolute;
     top: 0;

@@ -40,6 +40,8 @@ export interface LocalPlayerSession extends Record<string, unknown> {
   camera?: PlayerCameraState | null;
   /** Zoom lock is a session of this window, separate from `frozen`. */
   zoomLocked?: boolean;
+  /** Actual size is a session of this window. The scale is computed again from the screen. */
+  actualSize?: boolean;
   pinnedScale?: number | null;
   panX?: number;
   panY?: number;

@@ -14,6 +14,7 @@ import type { ViewAtlasState, ViewAtlasStore } from './storeFactory';
 import { EventEmitter } from 'events';
 import { PixiAppManager } from "./pixi/PixiAppManager"; // Import the new manager
 import { canvasMenuEntries } from "./pixi/canvasMenu";
+import { openPlayerScreenSetup, sendMapAtActualSize } from "./player/sendActualSize";
 import { openContextMenuGlobal } from "./react/root/ContextMenuContext";
 import { savePlayerRotation } from "./services/deviceSettings";
 import { PlayerWindowService } from "./services/PlayerWindowService";
@@ -744,7 +745,13 @@ export class PixiRendererOrchestrator { // Renamed class
         zoomLocked: presentation?.isZoomLocked() ?? false,
         frozen: players?.isFrozen() ?? false,
         paused: players?.isPlayerPaused() ?? false,
+        actualSize: presentation?.isActualSize() ?? false,
         sendMap: () => { void presentActiveTab(this.obsApp); },
+        sendActualSize: () => {
+          const rect = this.mapImage?.worldRect;
+          void sendMapAtActualSize(this.obsApp, this.store.getState().grid?.size, rect ? { width: rect.width, height: rect.height } : null);
+        },
+        openScreenSetup: () => { void openPlayerScreenSetup(this.obsApp); },
         openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },
         togglePause: () => { players?.togglePlayerPause(); },
         toggleFreeze: () => { players?.toggleCameraFreeze(); },
