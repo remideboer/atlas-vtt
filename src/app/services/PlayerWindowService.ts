@@ -15,7 +15,7 @@ import { cannotRender, PlayerFrameMirror, type PlayerFrameSource } from './Playe
 import { cameraFramingPicture, framedCamera } from './playerFrame';
 import { cellsAlong, pixelsPerInch } from '../player/actualSize';
 import { promptPlayerScreen } from '../player/PlayerScreenModal';
-import { displayMatching, prepareDesktopScreen, watchDisplayMetrics, type PlayerDisplay } from '../player/playerDisplays';
+import { displayMatching, prepareDesktopScreen, watchDisplayMetrics, workAreaMatching, type PlayerDisplay } from '../player/playerDisplays';
 import {
   actualScaleFor,
   draftOf,
@@ -385,6 +385,20 @@ export class PlayerWindowService {
   /** The open popout window, or null when there is none. */
   public getWindow(): Window | null {
     return this.isWindowOpen() ? this.playerWindow : null;
+  }
+
+  /**
+   * Fill the work area of the screen the player window is on. Nothing when the window is closed
+   * or this device has no desktop screen list.
+   */
+  public async maximizeWindow(): Promise<void> {
+    const win = this.getWindow();
+    if (!win) return;
+    await prepareDesktopScreen();
+    const frame = workAreaMatching(win);
+    if (!frame) return;
+    win.moveTo(frame.x, frame.y);
+    win.resizeTo(frame.width, frame.height);
   }
 
   /** Keep players on the current frame while the DM works on another scene tab. */

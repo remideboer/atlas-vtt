@@ -6,7 +6,8 @@ export interface PlayerDisplay {
   heightPx: number;
 }
 
-interface DisplayBounds {
+/** A window rectangle in CSS pixels, the units `moveTo` and `resizeTo` take. */
+export interface WindowFrame {
   x: number;
   y: number;
   width: number;
@@ -18,10 +19,11 @@ interface DesktopDisplay {
   label: string;
   size: { width: number; height: number };
   scaleFactor: number;
+  workArea: WindowFrame;
 }
 
 interface DesktopScreen {
-  getDisplayMatching(rect: DisplayBounds): DesktopDisplay;
+  getDisplayMatching(rect: WindowFrame): DesktopDisplay;
   on(event: 'display-metrics-changed', listener: () => void): void;
   removeListener(event: 'display-metrics-changed', listener: () => void): void;
 }
@@ -50,14 +52,20 @@ function isPositive(value: number): boolean {
   return Number.isFinite(value) && value > 0;
 }
 
+function placedWindow(win: Window): WindowFrame | null {
+  const bounds = { x: win.screenX, y: win.screenY, width: win.outerWidth, height: win.outerHeight };
+  if (!isPositive(bounds.width) || !isPositive(bounds.height)) return null;
+  return bounds;
+}
+
 /**
  * The screen `win` stands on. Physical pixels are the DIP size times the screen's scale factor.
  * None until `prepareDesktopScreen` has run, or when the window has no size yet.
  */
 export function displayMatching(win: Window): PlayerDisplay | null {
   if (!desktop) return null;
-  const bounds = { x: win.screenX, y: win.screenY, width: win.outerWidth, height: win.outerHeight };
-  if (!isPositive(bounds.width) || !isPositive(bounds.height)) return null;
+  const bounds = placedWindow(win);
+  if (!bounds) return null;
   const display = desktop.getDisplayMatching(bounds);
   const scale = display.scaleFactor;
   if (!isPositive(scale) || !isPositive(display.size.width) || !isPositive(display.size.height)) return null;
@@ -67,6 +75,19 @@ export function displayMatching(win: Window): PlayerDisplay | null {
     widthPx: Math.round(display.size.width * scale),
     heightPx: Math.round(display.size.height * scale),
   };
+}
+
+/**
+ * The work area of the screen `win` stands on, in CSS pixels. None until `prepareDesktopScreen`
+ * has run, or when the window has no size yet.
+ */
+export function workAreaMatching(win: Window): WindowFrame | null {
+  if (!desktop) return null;
+  const bounds = placedWindow(win);
+  if (!bounds) return null;
+  const area = desktop.getDisplayMatching(bounds).workArea;
+  if (!Number.isFinite(area.x) || !Number.isFinite(area.y) || !isPositive(area.width) || !isPositive(area.height)) return null;
+  return { x: area.x, y: area.y, width: area.width, height: area.height };
 }
 
 /**

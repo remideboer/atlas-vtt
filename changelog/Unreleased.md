@@ -1,6 +1,6 @@
 ## New
 
-- Right-click the empty map to open map and player-view commands, pause the player picture, rotate it by quarter-turns, and lock the player zoom while the GM keeps panning. Arrow keys nudge that locked view. Resuming a pause places the GM map on the picture players are showing, and both views continue from there. Rotate the loaded map by quarter-turns so both views share it. Zooming the GM view while player zoom is locked keeps the player picture where it is. Send map at actual size makes one grid square the chosen physical size on the player screen, and leaves the GM view as it is.
+- Right-click the empty map to open map and player-view commands, pause the player picture, rotate it by quarter-turns, and lock the player zoom while the GM keeps panning. Arrow keys nudge that locked view. Resuming a pause places the GM map on the picture players are showing, and both views continue from there. Rotate the loaded map by quarter-turns so both views share it. Zooming the GM view while player zoom is locked keeps the player picture where it is. Send map at actual size makes one grid square the chosen physical size on the player screen, and leaves the GM view as it is. The command opens the player window maximized on the current map when that window is not already open, and fills the window to its screen when it is.
 - The fog tool can cover the whole map, so a scene can start fully hidden and then be revealed.
 
 ## Fixed

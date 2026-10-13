@@ -6,6 +6,7 @@ declare module 'electron' {
       label: string;
       size: { width: number; height: number };
       scaleFactor: number;
+      workArea: { x: number; y: number; width: number; height: number };
     };
     on(event: 'display-metrics-changed', listener: () => void): void;
     removeListener(event: 'display-metrics-changed', listener: () => void): void;
