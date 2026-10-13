@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Viewport } from 'pixi-viewport';
 import type { EventSystem, PointData } from 'pixi.js';
+import { captureBeforeRender } from '../../src/app/pixi/playerSafeFrame';
 import { SmoothWheelZoom, approachScale, wheelZoomDoublings } from '../../src/app/pixi/SmoothWheelZoom';
 
 const viewports: Viewport[] = [];
@@ -104,6 +105,32 @@ describe('SmoothWheelZoom', () => {
     spin(viewport, 100);
     run(viewport, 60);
     expect(viewport.scale.x).toBeCloseTo(5 / NOTCH, 10);
+  });
+
+  it('does not sample a player frame that borrowed the viewport', () => {
+    const viewport = createViewport();
+    const anchor = worldUnderCursor(viewport);
+    spin(viewport, -100);
+    const x = viewport.x;
+    const y = viewport.y;
+    const scale = viewport.scale.x;
+    captureBeforeRender([], () => {
+      viewport.scale.set(4);
+      viewport.position.set(10, 20);
+      run(viewport, 5);
+      spin(viewport, -100);
+    }, () => {}, {
+      target: viewport,
+      camera: { centerX: 0, centerY: 0, scale: 4 },
+      screen: { width: 800, height: 600 },
+    });
+    expect(viewport.scale.x).toBe(scale);
+    expect(viewport.x).toBe(x);
+    expect(viewport.y).toBe(y);
+    run(viewport, 60);
+    expect(viewport.scale.x).toBeCloseTo(NOTCH, 10);
+    expect(worldUnderCursor(viewport).x).toBeCloseTo(anchor.x);
+    expect(worldUnderCursor(viewport).y).toBeCloseTo(anchor.y);
   });
 
   it('yields to anything else that zooms the viewport meanwhile', () => {

@@ -2,6 +2,23 @@ import type { PlayerCameraState } from '../types/playerCamera';
 import type { PlayerFrame, Size } from '../types/playerFrame';
 import type { Perception } from '../vision/perception';
 
+/** How many player-frame captures are borrowing the DM viewport right now. */
+let playerFrameCaptures = 0;
+
+/** True while a player frame has the DM viewport's transform. Wheel zoom must not sample it. */
+export function isPlayerFrameCapture(): boolean {
+  return playerFrameCaptures > 0;
+}
+
+function duringPlayerCapture(run: () => void): void {
+  playerFrameCaptures += 1;
+  try {
+    run();
+  } finally {
+    playerFrameCaptures -= 1;
+  }
+}
+
 /** Anything whose `visible` flag decides whether it is part of the next render. */
 export interface HideableLayer {
   visible: boolean;
@@ -167,18 +184,20 @@ export function captureWithLayerVisibility(
   capture: () => void,
   camera?: PlayerFrameCamera,
 ): void {
-  const { differs, restore } = applyPlayerFrame(layers, camera);
-  if (!differs) {
-    capture();
-    return;
-  }
-  try {
-    render();
-    capture();
-  } finally {
-    restore();
-    render();
-  }
+  duringPlayerCapture(() => {
+    const { differs, restore } = applyPlayerFrame(layers, camera);
+    if (!differs) {
+      capture();
+      return;
+    }
+    try {
+      render();
+      capture();
+    } finally {
+      restore();
+      render();
+    }
+  });
 }
 
 /**
@@ -192,11 +211,13 @@ export function captureBeforeRender(
   capture: () => void,
   camera?: PlayerFrameCamera,
 ): void {
-  const { restore } = applyPlayerFrame(layers, camera);
-  try {
-    render();
-    capture();
-  } finally {
-    restore();
-  }
+  duringPlayerCapture(() => {
+    const { restore } = applyPlayerFrame(layers, camera);
+    try {
+      render();
+      capture();
+    } finally {
+      restore();
+    }
+  });
 }
