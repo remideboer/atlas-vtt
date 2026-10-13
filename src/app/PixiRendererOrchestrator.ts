@@ -64,6 +64,7 @@ import type { TileView } from './pixi/mapImage/levelOfDetail';
 import { frameView } from './services/playerFrameDemand';
 import { MapController } from './MapController';
 import { NO_STRETCH, readMapStretch, sameStretch, type MapStretch } from './grid/mapStretch';
+import { showCamera } from './pixi/viewCamera';
 import { fitZoomRange } from './pixi/fitMapRect';
 
 export class PixiRendererOrchestrator { // Renamed class
@@ -731,6 +732,7 @@ export class PixiRendererOrchestrator { // Renamed class
       if (this._isDestroyed || !state.isGMView || state.isPlayerView || !state.mapLoaded) return;
       const players = PlayerWindowService.getInstance();
       const presentation = players?.playerPresentation();
+      const viewport = this.pixiAppManager.getViewport();
       openContextMenuGlobal(canvasMenuEntries({
         rotation: presentation?.rotation ?? 0,
         zoomLocked: presentation?.isZoomLocked() ?? false,
@@ -740,6 +742,9 @@ export class PixiRendererOrchestrator { // Renamed class
         openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },
         togglePause: () => { players?.togglePlayerPause(); },
         toggleFreeze: () => { players?.toggleCameraFreeze(); },
+        unfreezeCamera: () => {
+          players?.unfreezeCamera((camera) => { if (viewport) showCamera(viewport, camera); });
+        },
         toggleZoomLock: () => { players?.togglePlayerZoomLock(); },
         setRotation: (rotation) => {
           if (players) players.setPlayerRotation(rotation);

@@ -21,6 +21,7 @@ export const player = {
   'player.rotation180': '180°',
   'player.rotation270': '270°',
   'player.freezeCamera': 'Freeze camera',
+  'player.unfreezeCamera': 'Unfreeze camera',
   'player.freezeZoom': 'Freeze player zoom',
   'player.zoomLocked': 'Player zoom locked',
   'player.zoomUnlocked': 'Player zoom unlocked',

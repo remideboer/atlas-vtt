@@ -76,6 +76,30 @@ describe('player zoom lock', () => {
     expect(frame?.scale).toBeCloseTo(2, 5);
   });
 
+  it('keeps a frozen frame when the DM camera and pane have moved', () => {
+    const frozenCamera = { centerX: 100, centerY: 40, width: 400, height: 300, scale: 1 };
+    const held = presentedPlayerFrame({
+      window: WINDOW,
+      camera: frozenCamera,
+      gmScreen: { width: 800, height: 600 },
+      rotation: 0,
+      zoomLock: null,
+      frozen: true,
+    });
+    const again = presentedPlayerFrame({
+      window: WINDOW,
+      camera: frozenCamera,
+      gmScreen: { width: 200, height: 100 },
+      rotation: 0,
+      zoomLock: { scale: 4, offsetX: 80, offsetY: 80 },
+      frozen: true,
+    });
+    expect(again?.centerX).toBe(held?.centerX);
+    expect(again?.centerY).toBe(held?.centerY);
+    expect(again?.width).toBe(held?.width);
+    expect(again?.height).toBe(held?.height);
+  });
+
   it('lets a full freeze win over zoom lock', () => {
     const frozen = frameAt(0, { scale: 2, offsetX: 50, offsetY: 50 }, true);
     const fitted = frameAt(0, null, true);

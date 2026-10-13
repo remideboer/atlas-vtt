@@ -140,6 +140,19 @@ export class PlayerWindowService {
   }
 
   /**
+   * Put the DM's view on the frozen player picture, then let the cameras follow each other again.
+   * Players stay where they are. False when nothing is frozen.
+   */
+  public unfreezeCamera(show: (camera: PlayerCameraState) => void): boolean {
+    const camera = this.frozenCamera;
+    if (!camera) return false;
+    show({ ...camera });
+    this.setFrozenCamera(null);
+    new Notice(t('player.unfrozen'));
+    return true;
+  }
+
+  /**
    * Keep players on `camera`, by default the camera they currently see, and on the world
    * rectangle it frames: map changes stay visible; the DM's panning and zooming, and the size
    * of the DM's pane, no longer reach them.

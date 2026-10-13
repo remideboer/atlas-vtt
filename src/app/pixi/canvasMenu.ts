@@ -12,6 +12,7 @@ export interface CanvasMenuActions {
   openPlayerWindow(): void;
   togglePause(): void;
   toggleFreeze(): void;
+  unfreezeCamera(): void;
   toggleZoomLock(): void;
   setRotation(rotation: PlayerRotation): void;
   toggleInitiative(): void;
@@ -46,6 +47,13 @@ export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[
         icon: 'lock',
         checked: actions.frozen,
         onClick: () => actions.toggleFreeze(),
+      },
+      {
+        type: 'item',
+        label: t('player.unfreezeCamera'),
+        icon: 'unlock',
+        disabled: !actions.frozen,
+        onClick: () => actions.unfreezeCamera(),
       },
       {
         type: 'item',

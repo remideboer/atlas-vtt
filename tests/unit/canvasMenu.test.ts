@@ -12,6 +12,7 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     openPlayerWindow: vi.fn(),
     togglePause: vi.fn(),
     toggleFreeze: vi.fn(),
+    unfreezeCamera: vi.fn(),
     toggleZoomLock: vi.fn(),
     setRotation: vi.fn(),
     toggleInitiative: vi.fn(),
@@ -31,11 +32,26 @@ describe('blank canvas menu', () => {
     expect(rotation.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([false, true, false, false]);
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands submenu');
     const pause = commands.children[2];
-    const zoom = commands.children[4];
+    const unfreeze = commands.children[4];
+    const zoom = commands.children[5];
     expect(pause?.type).toBe('item');
     expect(zoom?.type).toBe('item');
     if (pause?.type === 'item') expect(pause.checked).toBe(true);
     if (zoom?.type === 'item') expect(zoom.checked).toBe(true);
+    if (unfreeze?.type === 'item') expect(unfreeze.disabled).toBe(true);
+  });
+
+  it('unfreezes only while the camera is frozen', () => {
+    const menuActions = actions({ frozen: true });
+    const menu = canvasMenuEntries(menuActions);
+    const commands = menu[0];
+    if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands');
+    const unfreeze = commands.children[4];
+    if (unfreeze?.type === 'item') {
+      expect(unfreeze.disabled).toBe(false);
+      unfreeze.onClick();
+    }
+    expect(menuActions.unfreezeCamera).toHaveBeenCalledOnce();
   });
 
   it('runs the command action and does not call a rotation that is already selected through the entry', () => {
