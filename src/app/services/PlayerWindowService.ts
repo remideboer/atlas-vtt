@@ -170,6 +170,50 @@ export class PlayerWindowService {
     return this.playerWindow !== null && !this.playerWindow.closed;
   }
 
+  /** True while players are on a still of the last frame, including a pause chosen from the map menu. */
+  public isPlayerPaused(): boolean {
+    return this.heldFrame !== null;
+  }
+
+  /**
+   * Hold the picture players see, or resume the presented scene. Resuming while this view
+   * shows another scene leaves the hold in place.
+   */
+  public togglePlayerPause(): boolean {
+    if (!this.isWindowOpen()) {
+      new Notice(t('player.notOpen'));
+      return false;
+    }
+    if (this.heldFrame) {
+      const source = this.resumableSource();
+      if (!source) {
+        new Notice(t('player.resumeOnScene'));
+        return true;
+      }
+      this.releaseHeldFrame(source);
+      new Notice(t('player.viewResumed'));
+      return false;
+    }
+    this.holdCurrentFrame();
+    if (!this.heldFrame) {
+      new Notice(t('player.nothingToFreeze'));
+      return false;
+    }
+    new Notice(t('player.viewPaused'));
+    return true;
+  }
+
+  /** The live source of the scene players are watching, when this view is showing that scene. */
+  private resumableSource(): PlayerFrameSource | null {
+    const source = this.streamSource;
+    if (!source || source === CLOSED_SOURCE) return null;
+    const state = source.store?.getState();
+    if (!state?.mapLoaded || state.isMapLoading) return null;
+    const filePath = this.playerView?.getState().filePath;
+    if (filePath && state.mapPath !== filePath) return null;
+    return source;
+  }
+
   /** The open popout window, or null when there is none. */
   public getWindow(): Window | null {
     return this.isWindowOpen() ? this.playerWindow : null;

@@ -7,8 +7,10 @@ export interface CanvasMenuActions {
   rotation: PlayerRotation;
   zoomLocked: boolean;
   frozen: boolean;
+  paused: boolean;
   sendMap(): void;
   openPlayerWindow(): void;
+  togglePause(): void;
   toggleFreeze(): void;
   toggleZoomLock(): void;
   setRotation(rotation: PlayerRotation): void;
@@ -31,6 +33,13 @@ export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[
     children: [
       { type: 'item', label: t('command.sendMapToPlayerView'), icon: 'monitor', onClick: () => actions.sendMap() },
       { type: 'item', label: t('command.openPlayerWindow'), icon: 'popup-open', onClick: () => actions.openPlayerWindow() },
+      {
+        type: 'item',
+        label: t('player.pauseView'),
+        icon: 'pause',
+        checked: actions.paused,
+        onClick: () => actions.togglePause(),
+      },
       {
         type: 'item',
         label: t('player.freezeCamera'),

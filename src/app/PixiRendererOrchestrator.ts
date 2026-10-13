@@ -735,8 +735,10 @@ export class PixiRendererOrchestrator { // Renamed class
         rotation: presentation?.rotation ?? 0,
         zoomLocked: presentation?.isZoomLocked() ?? false,
         frozen: players?.isFrozen() ?? false,
+        paused: players?.isPlayerPaused() ?? false,
         sendMap: () => { void presentActiveTab(this.obsApp); },
         openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },
+        togglePause: () => { players?.togglePlayerPause(); },
         toggleFreeze: () => { players?.toggleCameraFreeze(); },
         toggleZoomLock: () => { players?.togglePlayerZoomLock(); },
         setRotation: (rotation) => {

@@ -7,8 +7,10 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     rotation: 0,
     zoomLocked: false,
     frozen: false,
+    paused: false,
     sendMap: vi.fn(),
     openPlayerWindow: vi.fn(),
+    togglePause: vi.fn(),
     toggleFreeze: vi.fn(),
     toggleZoomLock: vi.fn(),
     setRotation: vi.fn(),
@@ -19,7 +21,7 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
 
 describe('blank canvas menu', () => {
   it('offers commands and the four rotation choices, with the active angle checked', () => {
-    const menu = canvasMenuEntries(actions({ rotation: 90, zoomLocked: true }));
+    const menu = canvasMenuEntries(actions({ rotation: 90, zoomLocked: true, paused: true }));
     expect(menu).toHaveLength(2);
     const commands = menu[0];
     const rotation = menu[1];
@@ -28,8 +30,11 @@ describe('blank canvas menu', () => {
     if (rotation?.type !== 'submenu' || typeof rotation.children === 'function') throw new Error('rotation submenu');
     expect(rotation.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([false, true, false, false]);
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands submenu');
-    const zoom = commands.children[3];
+    const pause = commands.children[2];
+    const zoom = commands.children[4];
+    expect(pause?.type).toBe('item');
     expect(zoom?.type).toBe('item');
+    if (pause?.type === 'item') expect(pause.checked).toBe(true);
     if (zoom?.type === 'item') expect(zoom.checked).toBe(true);
   });
 
@@ -41,5 +46,8 @@ describe('blank canvas menu', () => {
     const send = commands.children[0];
     if (send?.type === 'item') send.onClick();
     expect(menuActions.sendMap).toHaveBeenCalledOnce();
+    const pause = commands.children[2];
+    if (pause?.type === 'item') pause.onClick();
+    expect(menuActions.togglePause).toHaveBeenCalledOnce();
   });
 });
