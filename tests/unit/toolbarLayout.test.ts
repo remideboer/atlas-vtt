@@ -47,8 +47,8 @@ describe('resolveToolbarLayout', () => {
 
   it('applies a custom order and places a control it lacks after its default predecessor', () => {
     const resolved = resolveToolbarLayout({ order: ['palette', 'dice', 'move', 'future', 'fog'], hidden: ['loot', 'future', 'palette'] });
-    // loot follows dice, its default predecessor, and assets follows loot; draw follows fog.
-    expect(resolved.order.slice(0, 6)).toEqual(['palette', 'dice', 'loot', 'assets', 'move', 'fog']);
+    // loot follows dice, its default predecessor, and assets follows loot; the grid follows assets.
+    expect(resolved.order.slice(0, 6)).toEqual(['palette', 'dice', 'loot', 'assets', 'grid', 'move']);
     expect(resolved.order.indexOf('draw')).toBe(resolved.order.indexOf('fog') + 1);
     expect([...resolved.order].sort()).toEqual([...DEFAULT_TOOLBAR_ORDER].sort());
     expect([...resolved.hidden]).toEqual(['loot']);

@@ -13,6 +13,7 @@ export const MAP_HOTKEYS = [
   { id: 'dashboard', label: t('hotkey.dashboard'), group: t('hotkey.group.map'), defaultKey: 'Tab', dmOnly: true },
   { id: 'gmView', label: t('hotkey.gmView'), group: t('hotkey.group.map'), defaultKey: 'd', dmOnly: true },
   { id: 'sceneSwitcher', label: t('hotkey.sceneSwitcher'), group: t('hotkey.group.map'), defaultKey: 'g', dmOnly: true },
+  { id: 'grid', label: t('hotkey.grid'), group: t('hotkey.group.map'), defaultKey: 'k', dmOnly: true },
   { id: 'lightingPeek', label: t('hotkey.lightingPeek'), group: t('hotkey.group.map'), defaultKey: 'h', dmOnly: true, experimental: 'dynamicLighting' },
   { id: 'fitMap', label: t('hotkey.fitMap'), group: t('hotkey.group.map'), defaultKey: 'Shift+1' },
   { id: 'fitToken', label: t('hotkey.fitToken'), group: t('hotkey.group.map'), defaultKey: 'Shift+2' },

@@ -137,7 +137,7 @@ describe('dragging in the toolbar editor', () => {
     await mouse.up(stop.x, stop.y);
     await eachFrame(SETTLE_FRAMES, watch);
     expect(harness.settings.getToolbarLayout().hidden).toEqual(['loot']);
-    expect(barIds()).toEqual(['move', 'draw', 'text', 'measure', 'fog', 'pin', 'dice', 'assets', 'palette']);
+    expect(barIds()).toEqual(['move', 'draw', 'text', 'measure', 'fog', 'pin', 'dice', 'assets', 'grid', 'palette']);
     expect(document.querySelector('.atlas-toolbar-ghost')).toBeNull();
     if (!lastGhost) throw new Error('no ghost settled');
     expectSameBox(rectOf(query('.atlas-main-toolbar > [data-toolbar-item="fog"] > .atlas-toolbar-item__content')), lastGhost);

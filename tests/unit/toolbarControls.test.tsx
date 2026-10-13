@@ -28,6 +28,7 @@ function context(overrides: Partial<ToolbarContext> = {}): ToolbarContext {
     dice: { open: false, toggle: vi.fn(), tool: null, buttonRef: { current: null } },
     loot: { open: false, setOpen: vi.fn() },
     assets: { open: false, toggle: vi.fn() },
+    grid: { shown: false, toggle: vi.fn() },
     palette: { open: false, setOpen: vi.fn() },
     ...overrides,
   };
@@ -65,6 +66,11 @@ describe('toolbar control items', () => {
   it('activates the loot roller and the asset manager while open without pinning them', () => {
     expect(placement(item('loot', context({ loot: { open: true, setOpen: vi.fn() } })))).toEqual({ pinned: false, active: true });
     expect(placement(item('assets', context({ assets: { open: true, toggle: vi.fn() } })))).toEqual({ pinned: false, active: true });
+  });
+
+  it('presses the grid button while the scene grid is shown, without pinning it', () => {
+    expect(placement(item('grid', context()))).toEqual({ pinned: false, active: false });
+    expect(placement(item('grid', context({ grid: { shown: true, toggle: vi.fn() } })))).toEqual({ pinned: false, active: true });
   });
 
   it('always pins the Command palette', () => {

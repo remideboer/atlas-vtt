@@ -3,6 +3,7 @@ import assets from '../../../assets/toolbar/assets.webp'
 import dice from '../../../assets/toolbar/dice.webp'
 import draw from '../../../assets/toolbar/draw.webp'
 import fog from '../../../assets/toolbar/fog.webp'
+import grid from '../../../assets/toolbar/grid.webp'
 import loot from '../../../assets/toolbar/loot.webp'
 import measure from '../../../assets/toolbar/measure.webp'
 import move from '../../../assets/toolbar/move.webp'
@@ -19,5 +20,5 @@ import wall from '../../../assets/toolbar/wall.webp'
  * then shows its text alone.
  */
 export const TOOLBAR_SCREENSHOTS = {
-  move, fog, draw, text, measure, wall, pin, audio: null, dice, loot, assets, palette, undo,
+  move, fog, draw, text, measure, wall, pin, audio: null, dice, loot, assets, grid, palette, undo,
 } satisfies Record<ToolbarUnitId, string | null>

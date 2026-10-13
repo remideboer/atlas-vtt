@@ -7,6 +7,7 @@ export const hotkey: Translation = {
   'hotkey.dashboard': 'Экран мастера',
   'hotkey.gmView': 'Вид мастера',
   'hotkey.sceneSwitcher': 'Переключение открытых карт',
+  'hotkey.grid': 'Показать или скрыть сетку',
   'hotkey.fitMap': 'Вписать карту в окно',
   'hotkey.fitToken': 'Приблизить выбранный токен',
   'hotkey.move': 'Перемещение и выбор',

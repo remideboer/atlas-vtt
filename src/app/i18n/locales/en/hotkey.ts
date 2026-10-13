@@ -7,6 +7,7 @@ export const hotkey = {
   'hotkey.dashboard': 'DM screen',
   'hotkey.gmView': 'Toggle GM view',
   'hotkey.sceneSwitcher': 'Switch between open maps',
+  'hotkey.grid': 'Show or hide the grid',
   'hotkey.fitMap': 'Fit map to view',
   'hotkey.fitToken': 'Zoom to selected token',
   'hotkey.move': 'Move / selection tools',

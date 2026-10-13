@@ -68,6 +68,10 @@ export const TOOLBAR_CONTROLS = [
     description: 'Find and place your maps, tokens, scenes and encounters.',
   },
   {
+    id: 'grid', label: 'Grid', hotkey: 'grid', dmOnly: true, hideable: true,
+    description: 'Show or hide this scene\'s grid.',
+  },
+  {
     id: 'palette', label: 'Command palette', hotkey: 'palette', dmOnly: true, hideable: false,
     description: 'Find any Atlas command or setting by typing its name.',
   },

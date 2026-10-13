@@ -69,6 +69,11 @@ export const MainToolbar = forwardRef<HTMLDivElement, MainToolbarProps>(({ viewI
   const lootRollerOpen = useAtlasStore(s => s.lootRoller.open)
   const setLootRollerOpen = useAtlasStore(s => s.setLootRollerOpen)
   const isToolbarEditing = useAtlasStore(s => s.isToolbarEditing)
+  const gridShown = useAtlasStore(s => s.grid?.visible !== false)
+  const toggleGrid = useCallback(() => {
+    const state = store.getState()
+    state.setGridVisible(state.grid?.visible === false)
+  }, [store])
 
   const [openMenu, setOpenMenu] = useState<ToolMenu | null>(null)
   const closeMenus = useCallback((): void => setOpenMenu(null), [])
@@ -153,6 +158,7 @@ export const MainToolbar = forwardRef<HTMLDivElement, MainToolbarProps>(({ viewI
     dice: { open: isDiceTrayOpen, toggle: toggleDiceTray, tool: diceTool, buttonRef: diceButtonRef },
     loot: { open: lootRollerOpen, setOpen: setLootRollerOpen },
     assets: { open: isAssetManagerOpen, toggle: handleAssetManagerToggle },
+    grid: { shown: gridShown, toggle: toggleGrid },
     palette: { open: isCommandPaletteOpen, setOpen: setCommandPaletteOpen },
   }
 

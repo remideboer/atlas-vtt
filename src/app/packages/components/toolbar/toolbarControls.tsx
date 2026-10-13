@@ -1,5 +1,5 @@
 import React from "react"
-import { Command, Dices, ImageIcon, MapPin, Volume2 } from "lucide-react"
+import { Command, Dices, Grid3x3, ImageIcon, MapPin, Volume2 } from "lucide-react"
 import { CoinIcon } from "../../../react/components/CoinIcon"
 import { DiceDropdownMenu } from "../../../react/components/dice/DiceDropdownMenu"
 import type { ToolbarControlId } from "../../../toolbar/toolbarCatalog"
@@ -54,6 +54,10 @@ export const TOOLBAR_CONTROL_ITEMS = {
   assets: ({ assets, hotkeyLabel }) => buttonItem({
     icon: ImageIcon, label: t('toolbar.assetManager'), shortcut: hotkeyLabel('assets'),
     isActive: assets.open, pinned: false, onClick: assets.toggle,
+  }),
+  grid: ({ grid, hotkeyLabel }) => buttonItem({
+    icon: Grid3x3, label: t('toolbar.grid'), shortcut: hotkeyLabel('grid'),
+    isActive: grid.shown, pinned: false, onClick: grid.toggle,
   }),
   // The way into the toolbar editor: always pinned, so it never moves into "More tools".
   palette: ({ palette, hotkeyLabel }) => buttonItem({

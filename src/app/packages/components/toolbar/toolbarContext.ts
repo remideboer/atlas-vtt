@@ -21,5 +21,7 @@ export interface ToolbarContext {
   dice: { open: boolean; toggle: () => void; tool: DiceTool | null; buttonRef: React.RefObject<HTMLDivElement | null> }
   loot: { open: boolean; setOpen: (open: boolean) => void }
   assets: { open: boolean; toggle: () => void }
+  /** Shown while the scene grid is visible. Unset counts as shown. */
+  grid: { shown: boolean; toggle: () => void }
   palette: { open: boolean; setOpen: (open: boolean) => void }
 }

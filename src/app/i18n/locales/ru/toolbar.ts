@@ -18,6 +18,7 @@ export const toolbar: Translation = {
   'toolbar.fogEraser': 'Ластик тумана',
   'toolbar.fogOptions': 'Настройки тумана',
   'toolbar.fogTool': 'Туман',
+  'toolbar.grid': 'Сетка',
   'toolbar.iconStamp': 'Штамп значка',
   'toolbar.ink': 'Чернила',
   'toolbar.laser': 'Лазерная указка',

@@ -46,6 +46,7 @@ export const toolbar = {
   'toolbar.drawWalls': 'Draw walls',
   'toolbar.pointToPoint': 'Point to point',
   'toolbar.gmView': 'GM View ({key})',
+  'toolbar.grid': 'Grid',
   'toolbar.sessionView': 'Session View ({key})',
   'toolbar.diceFailed': 'Dice tool not initialized. Please try reloading the view.',
   'toolbar.laserColour': 'Laser colour',
