@@ -1,6 +1,7 @@
 import type { App } from 'obsidian';
 import type { NavigationInputMode } from './atlasSettings';
 import { isLightingQualityLevel, type LightingQualityLevel } from '../lighting/lightingQuality';
+import { readPlayerRotation, type PlayerRotation } from './playerPresentation';
 
 /**
  * Facts about this device, which Atlas keeps in the vault's local storage: they never sync,
@@ -9,6 +10,8 @@ import { isLightingQualityLevel, type LightingQualityLevel } from '../lighting/l
 export const INPUT_MODE_STORAGE_KEY = 'atlas-vtt:input-mode';
 /** How much the lighting may ask of this device's graphics (`LightingQualityLevel`). */
 export const LIGHTING_QUALITY_STORAGE_KEY = 'atlas-vtt:lighting-quality';
+/** Clockwise quarter-turn of the player map on this device (`PlayerRotation`). */
+export const PLAYER_ROTATION_STORAGE_KEY = 'atlas-vtt:player-rotation';
 
 type DeviceStorage = Pick<App, 'loadLocalStorage' | 'saveLocalStorage'>;
 
@@ -49,5 +52,23 @@ export function saveLightingQuality(storage: DeviceStorage, level: LightingQuali
     storage.saveLocalStorage(LIGHTING_QUALITY_STORAGE_KEY, level);
   } catch (error) {
     console.error('[Atlas] Could not save the lighting quality of this device', error);
+  }
+}
+
+/** The player-map rotation chosen on this device. Anything unreadable is 0°. */
+export function loadPlayerRotation(storage: DeviceStorage): PlayerRotation {
+  try {
+    return readPlayerRotation(storage.loadLocalStorage(PLAYER_ROTATION_STORAGE_KEY));
+  } catch (error) {
+    console.error('[Atlas] Could not read the player view rotation of this device', error);
+    return 0;
+  }
+}
+
+export function savePlayerRotation(storage: DeviceStorage, rotation: PlayerRotation): void {
+  try {
+    storage.saveLocalStorage(PLAYER_ROTATION_STORAGE_KEY, rotation);
+  } catch (error) {
+    console.error('[Atlas] Could not save the player view rotation of this device', error);
   }
 }

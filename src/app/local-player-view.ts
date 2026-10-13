@@ -2,6 +2,7 @@ import { ItemView, type WorkspaceLeaf, type ViewStateResult } from 'obsidian';
 import { PlayerWindowService } from './services/PlayerWindowService';
 import { restorePlayerWindow } from './services/PlayerWindowPresenter';
 import { t } from './i18n';
+import { readZoomLockSession } from './services/playerPresentation';
 import type { PlayerCameraState } from './types/playerCamera';
 
 export type { PlayerCameraState } from './types/playerCamera';
@@ -37,6 +38,11 @@ export interface LocalPlayerSession extends Record<string, unknown> {
   frozen: boolean;
   /** The camera players saw the scene of `tabId` through last; null once another scene is presented, until a frame of it was shown. */
   camera?: PlayerCameraState | null;
+  /** Zoom lock is a session of this window, separate from `frozen`. */
+  zoomLocked?: boolean;
+  pinnedScale?: number | null;
+  panX?: number;
+  panY?: number;
 }
 
 /** A real workspace leaf lets Obsidian restore the presentation and window geometry. */
@@ -63,7 +69,16 @@ export class LocalPlayerView extends ItemView {
     if (typeof state !== 'object' || state === null) return;
     if (!('tabId' in state) || typeof state.tabId !== 'string') return;
     if (!('filePath' in state) || typeof state.filePath !== 'string') return;
-    this.session = { tabId: state.tabId, filePath: state.filePath, frozen: 'frozen' in state && state.frozen === true };
+    const zoom = readZoomLockSession(state);
+    this.session = {
+      tabId: state.tabId,
+      filePath: state.filePath,
+      frozen: 'frozen' in state && state.frozen === true,
+      zoomLocked: zoom.zoomLocked,
+      pinnedScale: zoom.pinnedScale,
+      panX: zoom.panX,
+      panY: zoom.panY,
+    };
     const camera = 'camera' in state ? readPlayerCamera(state.camera) : null;
     if (camera) this.session.camera = camera;
     this.app.workspace.onLayoutReady(() => {

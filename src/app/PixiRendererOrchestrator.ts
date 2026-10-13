@@ -13,6 +13,11 @@ import type { App } from 'obsidian';
 import type { ViewAtlasState, ViewAtlasStore } from './storeFactory';
 import { EventEmitter } from 'events';
 import { PixiAppManager } from "./pixi/PixiAppManager"; // Import the new manager
+import { canvasMenuEntries } from "./pixi/canvasMenu";
+import { openContextMenuGlobal } from "./react/root/ContextMenuContext";
+import { savePlayerRotation } from "./services/deviceSettings";
+import { PlayerWindowService } from "./services/PlayerWindowService";
+import { openPlayerWindow, presentActiveTab } from "./services/PlayerWindowPresenter";
 import { TokenRenderer } from "./pixi/token-renderer"; // Import TokenRenderer
 // Import color utils
 import { PinRenderer } from "./pixi/PinRenderer"; // Import PinRenderer
@@ -175,6 +180,8 @@ export class PixiRendererOrchestrator { // Renamed class
           return;
         }
       }
+
+      this.wireBlankContextMenu();
       
       // Subscribe to tool changes from the isolated view store
       this._unsubscribeFromToolChanges = this.store.subscribe(
@@ -717,6 +724,33 @@ export class PixiRendererOrchestrator { // Renamed class
    * stage's own render, which puts the DM's frame back), the DM's frame is rendered again here.
    * Nothing is rendered or copied while the graphics context is lost.
    */
+  /** Right-click on empty map in the GM view: commands and player-view rotation. */
+  private wireBlankContextMenu(): void {
+    this.pixiAppManager.setBlankContextMenu((x, y) => {
+      const state = this.store.getState();
+      if (this._isDestroyed || !state.isGMView || state.isPlayerView || !state.mapLoaded) return;
+      const players = PlayerWindowService.getInstance();
+      const presentation = players?.playerPresentation();
+      openContextMenuGlobal(canvasMenuEntries({
+        rotation: presentation?.rotation ?? 0,
+        zoomLocked: presentation?.isZoomLocked() ?? false,
+        frozen: players?.isFrozen() ?? false,
+        sendMap: () => { void presentActiveTab(this.obsApp); },
+        openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },
+        toggleFreeze: () => { players?.toggleCameraFreeze(); },
+        toggleZoomLock: () => { players?.togglePlayerZoomLock(); },
+        setRotation: (rotation) => {
+          if (players) players.setPlayerRotation(rotation);
+          else savePlayerRotation(this.obsApp, rotation);
+        },
+        toggleInitiative: () => {
+          const current = this.store.getState();
+          current.setInitiativeTrackerOpen(!current.initiativeTrackerOpen);
+        },
+      }), { x, y });
+    });
+  }
+
   public withPlayerSafeFrame(copy: (piece: FramePiece) => void, settings: AtlasSettings['localPlayerView'], frame: PlayerFrame, renderFollows = false): void {
     if (this._isDestroyed) return;
     const app = this.pixiAppManager.getApp();

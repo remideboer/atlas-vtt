@@ -13,7 +13,9 @@ import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition
 import { t } from '../i18n';
 import { cannotRender, PlayerFrameMirror, type PlayerFrameSource } from './PlayerFrameMirror';
 import { framedCamera } from './playerFrame';
-import type { Screen } from '../types/playerFrame';
+import { presentedPlayerFrame } from './playerPresentation';
+import { PlayerPresentationController } from './playerPresentationController';
+import type { Screen, Size } from '../types/playerFrame';
 import type { PresentedScene } from './presentedScene';
 
 /** Scopes the rules in `player-window.scss` to the popout document. */
@@ -48,6 +50,9 @@ export class PlayerWindowService {
   private animationFrame: number | null = null;
   /** Camera the DM froze players on; the presented scene is still rendered live through it. */
   private frozenCamera: PlayerCameraState | null = null;
+  /** Rotation the held snapshot was rendered at, so a later turn can rotate that still. */
+  private heldRotation = 0;
+  private readonly presentation: PlayerPresentationController;
   /** The camera of the last frame players were shown of the presented scene; none until a frame of that scene came. */
   private shownCamera: PlayerCameraState | null = null;
   /** Last player frame, shown unchanged while the DM works on another scene tab. */
@@ -71,7 +76,48 @@ export class PlayerWindowService {
     this.app = app;
     this.store = store;
     this.settingsService = settingsService;
+    this.presentation = new PlayerPresentationController(app, () => this.onPresentationChange());
     PlayerWindowService.instance = this;
+  }
+
+  /** The device rotation and this window's zoom lock. */
+  public playerPresentation(): PlayerPresentationController {
+    return this.presentation;
+  }
+
+  /**
+   * Pin the scale players are shown now, or release it. Full camera freeze still wins while it
+   * is on; turning that off returns to this lock when it stays enabled.
+   */
+  public togglePlayerZoomLock(): boolean {
+    if (this.presentation.isZoomLocked()) {
+      this.presentation.toggleZoomLock(null);
+      new Notice(t('player.zoomUnlocked'));
+      return false;
+    }
+    const scale = this.scalePlayersSee();
+    if (scale === null) {
+      new Notice(t('player.nothingToFreeze'));
+      return false;
+    }
+    this.presentation.toggleZoomLock(scale);
+    new Notice(t('player.zoomLocked'));
+    return true;
+  }
+
+  public setPlayerRotation(rotation: Parameters<PlayerPresentationController['setRotation']>[0]): void {
+    this.presentation.setRotation(rotation);
+  }
+
+  /**
+   * One arrow-key step of the player frame. False when zoom lock is off, the window is closed,
+   * or a full camera freeze is holding the centre.
+   */
+  public nudgePlayerFrame(key: string): boolean {
+    if (!this.isWindowOpen() || this.frozenCamera || !this.presentation.isZoomLocked()) return false;
+    const extent = this.screenExtent();
+    if (!extent) return false;
+    return this.presentation.nudgeKey(key, extent);
   }
 
   public static getInstance(): PlayerWindowService | null {
@@ -134,6 +180,7 @@ export class PlayerWindowService {
     if (!this.isWindowOpen()) return;
     this.sceneOverlays.forEach((overlay) => overlay.hold());
     if (this.heldFrame) return;
+    this.heldRotation = this.presentation.rotation;
     this.heldFrame = this.snapshotPlayerFrame();
     this.updateFreezeIndicator();
   }
@@ -169,6 +216,7 @@ export class PlayerWindowService {
     this.mirror?.markStale();
     this.presentScene();
     this.heldFrame = null;
+    this.syncHeldTransform();
     this.updateFreezeIndicator();
     this.followSource();
   }
@@ -188,6 +236,7 @@ export class PlayerWindowService {
     this.mirror?.markStale();
     this.presentScene();
     this.heldFrame = null;
+    this.syncHeldTransform();
     this.setFrozenCamera(null);
     // The camera players saw the scene before through says nothing about this one
     if (anotherScene) this.shownCamera = null;
@@ -221,6 +270,7 @@ export class PlayerWindowService {
     this.playerWindow = view.contentEl.win;
     this.streamSource = source;
     this.shownCamera = null;
+    this.presentation.restore(view.getState());
     this.pinFrozenCamera();
     this.mirror?.markStale();
     playerWindowStore.setState({ shownTabId: scene.tabId });
@@ -241,7 +291,11 @@ export class PlayerWindowService {
     this.mirror?.markStale();
     this.updateFreezeIndicator();
     playerWindowStore.setState({ isFrozen: this.isFrozen() });
-    this.playerView?.updateSession({ frozen: this.isFrozen(), ...(this.frozenCamera ? { camera: { ...this.frozenCamera } } : {}) });
+    this.playerView?.updateSession({
+      frozen: this.isFrozen(),
+      ...(this.frozenCamera ? { camera: { ...this.frozenCamera } } : {}),
+      ...this.presentation.sessionFields(),
+    });
   }
 
   /**
@@ -442,6 +496,8 @@ export class PlayerWindowService {
       window: () => this.windowScreen(targetCanvas),
       heldFrame: () => this.heldFrame,
       frozenCamera: () => this.frozenCamera,
+      rotation: () => this.presentation.rotation,
+      zoomLock: () => this.presentation.zoomLock(),
       settings: () => this.settingsService.getLocalPlayerViewSettings(),
       onFrame: (camera) => this.recordPlayerCamera(camera),
     });
@@ -477,7 +533,70 @@ export class PlayerWindowService {
     const previous = this.playerView?.getState().camera;
     const changed = camera.centerX !== previous?.centerX || camera.centerY !== previous.centerY || camera.scale !== previous.scale
       || camera.width !== previous.width || camera.height !== previous.height;
-    if (changed) this.playerView?.updateSession({ camera });
+    if (changed) this.playerView?.updateSession({ camera, ...this.presentation.sessionFields() });
+  }
+
+  /** The scale of the frame players are shown now, before a zoom lock is applied on top. */
+  private scalePlayersSee(): number | null {
+    const canvas = this.playerCanvas();
+    const window = canvas ? this.windowScreen(canvas) : null;
+    const camera = this.frozenCamera ?? this.streamSource?.getCamera?.();
+    if (!window || !camera) return null;
+    const screen = this.streamSource?.getScreen?.();
+    return presentedPlayerFrame({
+      window,
+      pane: screen,
+      camera,
+      gmScreen: screen,
+      rotation: this.presentation.rotation,
+      zoomLock: null,
+      frozen: this.frozenCamera !== null,
+    })?.scale ?? null;
+  }
+
+  /** World size visible along the player window's screen axes at the pinned scale. */
+  private screenExtent(): Size | null {
+    const lock = this.presentation.zoomLock();
+    const canvas = this.playerCanvas();
+    const window = canvas ? this.windowScreen(canvas) : null;
+    if (!lock || !window) return null;
+    return { width: window.width / lock.scale, height: window.height / lock.scale };
+  }
+
+  private playerCanvas(): HTMLCanvasElement | null {
+    const canvas = this.playerWindow?.document.getElementById('atlas-player-canvas');
+    return canvas instanceof HTMLCanvasElement ? canvas : null;
+  }
+
+  private onPresentationChange(): void {
+    this.mirror?.markStale();
+    this.syncHeldTransform();
+    this.playerView?.updateSession({ ...this.presentation.sessionFields() });
+  }
+
+  /**
+   * A held frame is a bitmap of the angle it was taken at. A later rotation turns that bitmap
+   * in one style write, and the window's DOM overlays stay outside the canvas so they stay upright.
+   */
+  private syncHeldTransform(): void {
+    const canvas = this.playerCanvas();
+    if (!canvas) return;
+    const upright = '';
+    if (!this.heldFrame) {
+      canvas.style.transform = upright;
+      return;
+    }
+    const delta = (this.presentation.rotation - this.heldRotation + 360) % 360;
+    if (delta === 0) {
+      canvas.style.transform = upright;
+      return;
+    }
+    const width = canvas.clientWidth || 1;
+    const height = canvas.clientHeight || 1;
+    const fit = delta === 90 || delta === 270 ? Math.min(width / height, height / width) : 1;
+    const origin = 'center center';
+    canvas.style.transformOrigin = origin;
+    canvas.style.transform = `rotate(${delta}deg) scale(${fit})`;
   }
 
   /**
@@ -514,6 +633,7 @@ export class PlayerWindowService {
     this.playerView = null;
     this.streamSource = null;
     this.heldFrame = null;
+    this.syncHeldTransform();
     this.frozenCamera = null;
     this.shownCamera = null;
     resetPlayerWindowStore();

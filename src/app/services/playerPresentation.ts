@@ -1,0 +1,142 @@
+import type { PlayerCameraState } from '../types/playerCamera';
+import type { PlayerFrame, Screen, Size, WorldView } from '../types/playerFrame';
+import { playerFrame, viewOf } from './playerFrame';
+
+/** Clockwise quarter-turns of the player map, in degrees. */
+export const PLAYER_ROTATIONS = [0, 90, 180, 270] as const;
+export type PlayerRotation = (typeof PLAYER_ROTATIONS)[number];
+
+export type ArrowKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown';
+
+/** Share of the visible world extent one arrow-key step moves. */
+export const PLAYER_PAN_STEP = 0.1;
+
+export interface ZoomLock {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export interface ZoomLockSession {
+  zoomLocked: boolean;
+  pinnedScale: number | null;
+  panX: number;
+  panY: number;
+}
+
+/** A stored angle, or 0° when the value is not one of the four quarter-turns. */
+export function readPlayerRotation(value: unknown): PlayerRotation {
+  return value === 90 || value === 180 || value === 270 ? value : 0;
+}
+
+export function rotationRadians(rotation: PlayerRotation): number {
+  return (rotation * Math.PI) / 180;
+}
+
+/**
+ * The world rectangle `playerFrame` should fit so a clockwise `rotation` still shows all of
+ * `view`. At 90° and 270° the window's axes swap, so the view's sides swap before the fit.
+ * The centre stays the same.
+ */
+export function viewFittedForRotation(view: WorldView, rotation: PlayerRotation): WorldView {
+  if (rotation === 0 || rotation === 180) return view;
+  return { centerX: view.centerX, centerY: view.centerY, width: view.height, height: view.width };
+}
+
+function isPositive(value: number): boolean {
+  return Number.isFinite(value) && value > 0 && Number.isFinite(1 / value);
+}
+
+/**
+ * The world rectangle a window shows at a pinned scale: `scale` CSS pixels of the window per
+ * world pixel, centred on (`centerX`, `centerY`). Rotation is applied by the camera, not by
+ * resizing this rectangle, so the mini size stays the pinned scale.
+ */
+export function zoomLockedView(window: Size, centerX: number, centerY: number, scale: number): WorldView | null {
+  if (!isPositive(window.width) || !isPositive(window.height) || !isPositive(scale)) return null;
+  if (!Number.isFinite(centerX) || !Number.isFinite(centerY)) return null;
+  return { centerX, centerY, width: window.width / scale, height: window.height / scale };
+}
+
+/**
+ * A screen-space pan, in world pixels along the screen axes, turned into a world offset.
+ * `rotation` is how the picture is turned clockwise, so screen-right follows the world axis
+ * that currently points that way.
+ */
+function axis(value: number): number {
+  return value === 0 ? 0 : value;
+}
+
+export function screenPanToWorld(dx: number, dy: number, rotation: PlayerRotation): { x: number; y: number } {
+  switch (rotation) {
+    case 0: return { x: axis(dx), y: axis(dy) };
+    case 90: return { x: axis(dy), y: axis(-dx) };
+    case 180: return { x: axis(-dx), y: axis(-dy) };
+    case 270: return { x: axis(-dy), y: axis(dx) };
+  }
+}
+
+/** One arrow-key step of the player frame. `extent` is the world size visible along each screen axis. */
+export function panOffsetForKey(extent: Size, rotation: PlayerRotation, key: ArrowKey): { x: number; y: number } {
+  const across = extent.width * PLAYER_PAN_STEP;
+  const down = extent.height * PLAYER_PAN_STEP;
+  let dx = 0;
+  let dy = 0;
+  if (key === 'ArrowLeft') dx = -across;
+  else if (key === 'ArrowRight') dx = across;
+  else if (key === 'ArrowUp') dy = -down;
+  else dy = down;
+  return screenPanToWorld(dx, dy, rotation);
+}
+
+export function isArrowKey(key: string): key is ArrowKey {
+  return key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown';
+}
+
+function withRotation(frame: PlayerFrame, rotation: PlayerRotation): PlayerFrame {
+  return rotation === 0 ? frame : { ...frame, rotation };
+}
+
+/**
+ * The frame players are shown. A frozen camera keeps its rectangle and is fitted, rotation
+ * included. Zoom lock uses the DM centre plus the pan offset at `zoomLock.scale`, and ignores
+ * the DM zoom. Otherwise the DM view is fitted, swapped at 90° and 270° so the whole view still
+ * shows.
+ */
+export function presentedPlayerFrame(input: {
+  window: Screen;
+  pane?: Screen | undefined;
+  camera: PlayerCameraState;
+  gmScreen?: Size | undefined;
+  rotation: PlayerRotation;
+  zoomLock: ZoomLock | null;
+  frozen: boolean;
+}): PlayerFrame | null {
+  const { window, pane, camera, gmScreen, rotation, zoomLock, frozen } = input;
+  if (frozen || !zoomLock) {
+    const view = viewOf(camera, gmScreen);
+    if (!view) return null;
+    const frame = playerFrame(window, viewFittedForRotation(view, rotation), pane);
+    return frame ? withRotation(frame, rotation) : null;
+  }
+  const view = zoomLockedView(
+    window,
+    camera.centerX + zoomLock.offsetX,
+    camera.centerY + zoomLock.offsetY,
+    zoomLock.scale,
+  );
+  if (!view) return null;
+  const frame = playerFrame(window, view, pane);
+  return frame ? withRotation(frame, rotation) : null;
+}
+
+/** Zoom-lock fields of a saved player-window session. Missing or unusable values are off. */
+export function readZoomLockSession(state: object): ZoomLockSession {
+  const zoomLocked = 'zoomLocked' in state && state.zoomLocked === true;
+  const pinnedScale = 'pinnedScale' in state && typeof state.pinnedScale === 'number' && isPositive(state.pinnedScale)
+    ? state.pinnedScale
+    : null;
+  const panX = 'panX' in state && typeof state.panX === 'number' && Number.isFinite(state.panX) ? state.panX : 0;
+  const panY = 'panY' in state && typeof state.panY === 'number' && Number.isFinite(state.panY) ? state.panY : 0;
+  return { zoomLocked: zoomLocked && pinnedScale !== null, pinnedScale: zoomLocked ? pinnedScale : null, panX, panY };
+}

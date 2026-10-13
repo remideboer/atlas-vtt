@@ -18,7 +18,11 @@ export class PixiAppManager {
   private width: number;
   private height: number;
   private canvasEl: HTMLCanvasElement;
-  private _canvasContextMenuPreventer: ((e: Event) => void) | null = null;
+  private _canvasContextMenuPreventer: ((e: MouseEvent) => void) | null = null;
+  private _canvasRightDown: ((e: PointerEvent) => void) | null = null;
+  private rightDownAt: { x: number; y: number } | null = null;
+  /** A right-click that did not drag, on blank map. Client coordinates. */
+  private blankContextMenu: ((x: number, y: number) => void) | null = null;
   public onRecoverCallback?: () => void;
 
   /**
@@ -177,9 +181,36 @@ export class PixiAppManager {
       });
     this.viewport.plugins.add('decelerate', new SmoothDecelerate(this.viewport));
     
-    this._canvasContextMenuPreventer = (e) => e.preventDefault();
+    this._canvasRightDown = (e) => {
+      if (e.button === 2) this.rightDownAt = { x: e.clientX, y: e.clientY };
+    };
+    this._canvasContextMenuPreventer = (e) => {
+      e.preventDefault();
+      const start = this.rightDownAt;
+      this.rightDownAt = null;
+      if (!start || !this.blankContextMenu) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      // A right-drag pans. The browser still fires contextmenu; that must not open the menu.
+      if (dx * dx + dy * dy > 25) return;
+      const doc = this.canvasEl.ownerDocument;
+      const x = e.clientX;
+      const y = e.clientY;
+      const open = this.blankContextMenu;
+      // After this turn, a menu an object opened on pointerup is in the document.
+      doc.defaultView?.setTimeout(() => {
+        if (doc.querySelector('[role="menu"]')) return;
+        open(x, y);
+      }, 0);
+    };
+    this.canvasEl.addEventListener('pointerdown', this._canvasRightDown);
     this.canvasEl.addEventListener('contextmenu', this._canvasContextMenuPreventer);
 
+  }
+
+  /** Called for a right-click on the map that no object menu took. */
+  public setBlankContextMenu(handler: ((x: number, y: number) => void) | null): void {
+    this.blankContextMenu = handler;
   }
 
   /**
@@ -245,9 +276,11 @@ export class PixiAppManager {
       return;
     }
     this._isDestroyed = true;
-    if (this._canvasContextMenuPreventer && this.canvasEl) {
-      this.canvasEl.removeEventListener('contextmenu', this._canvasContextMenuPreventer);
+    if (this.canvasEl) {
+      if (this._canvasContextMenuPreventer) this.canvasEl.removeEventListener('contextmenu', this._canvasContextMenuPreventer);
+      if (this._canvasRightDown) this.canvasEl.removeEventListener('pointerdown', this._canvasRightDown);
       this._canvasContextMenuPreventer = null;
+      this._canvasRightDown = null;
     }
     
     if (this.viewport) {
