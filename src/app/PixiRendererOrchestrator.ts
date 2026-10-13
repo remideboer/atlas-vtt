@@ -754,7 +754,9 @@ export class PixiRendererOrchestrator { // Renamed class
         openScreenSetup: () => { void openPlayerScreenSetup(this.obsApp); },
         openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },
         togglePause: () => { players?.togglePlayerPause(); },
-        toggleFreeze: () => { players?.toggleCameraFreeze(); },
+        toggleFreeze: () => {
+          players?.toggleCameraFreeze((camera) => { if (viewport) showCamera(viewport, camera); });
+        },
         unfreezeCamera: () => {
           players?.unfreezeCamera((camera) => { if (viewport) showCamera(viewport, camera); });
         },

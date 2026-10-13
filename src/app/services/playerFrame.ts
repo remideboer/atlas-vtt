@@ -72,6 +72,18 @@ export function framedCamera(camera: PlayerCameraState, screen: Size | undefined
 }
 
 /**
+ * The GM camera that frames the frozen player picture on `pane`: the pane's width over the
+ * picture's world width, centred on the picture. Without a rectangle, the picture's own zoom stays.
+ */
+export function cameraFramingPicture(picture: PlayerCameraState, pane: Size | undefined): PlayerCameraState {
+  const width = picture.width;
+  const scale = pane && isPositive(pane.width) && width !== undefined && isPositive(width)
+    ? pane.width / width
+    : picture.scale;
+  return { centerX: picture.centerX, centerY: picture.centerY, scale };
+}
+
+/**
  * The largest frame of `size`'s shape that a canvas of `canvas`' pixels brings across in no
  * more than `MAX_FRAME_PIECES` pieces: `size` itself where it takes no more. Every way to lay
  * the pieces out, as columns by rows, holds a frame of some scale; the largest of them wins.

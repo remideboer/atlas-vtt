@@ -33,6 +33,7 @@ import { useAtlasStore, useViewStoreHook } from '../ViewStoreContext';
 import { useAtlasUI } from '../root/AtlasUIContext';
 import { PlayerWindowService } from '../../services/PlayerWindowService';
 import { openPlayerWindow, presentActiveTab } from '../../services/PlayerWindowPresenter';
+import { showCamera } from '../../pixi/viewCamera';
 import { playerWindowStore } from '../../stores/playerWindowStore';
 import { debounce } from '../../../utils/debounce';
 import { cn } from '../../../utils/cn';
@@ -307,7 +308,8 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       action: () => {
         const service = PlayerWindowService.getInstance();
         if (service?.isWindowOpen()) {
-          service.toggleCameraFreeze();
+          const viewport = view?.serviceManager.getRendererService().getViewport();
+          service.toggleCameraFreeze((camera) => { if (viewport) showCamera(viewport, camera); });
         } else {
           new Notice(t('palette.noPlayerWindow'));
         }

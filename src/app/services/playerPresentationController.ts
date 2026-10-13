@@ -39,6 +39,19 @@ export class PlayerPresentationController {
   }
 
   /**
+   * The player picture's centre is now this DM camera's centre. The pan offset is cleared, and
+   * the camera is the one already noted, so the next frame does not add the offset again or
+   * treat the snap as a zoom.
+   */
+  adoptDmCamera(camera: { centerX: number; centerY: number; scale: number }): void {
+    if (!Number.isFinite(camera.centerX) || !Number.isFinite(camera.centerY) || !Number.isFinite(camera.scale)) return;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.dmCamera = { centerX: camera.centerX, centerY: camera.centerY, scale: camera.scale };
+    this.onChange();
+  }
+
+  /**
    * Note the live DM camera. While zoom is locked or the picture is at actual size, a change of
    * its scale is a zoom: the player centre stays, and the offset absorbs the centre the zoom
    * moved. A pan (the same scale) is left for the frame to follow.

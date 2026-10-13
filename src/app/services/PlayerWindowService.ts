@@ -12,7 +12,7 @@ import { LocalPlayerView, LOCAL_PLAYER_VIEW_TYPE, type PlayerCameraState } from 
 import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition';
 import { t } from '../i18n';
 import { cannotRender, PlayerFrameMirror, type PlayerFrameSource } from './PlayerFrameMirror';
-import { framedCamera } from './playerFrame';
+import { cameraFramingPicture, framedCamera } from './playerFrame';
 import { cellsAlong, pixelsPerInch } from '../player/actualSize';
 import { promptPlayerScreen } from '../player/PlayerScreenModal';
 import { displayMatching, prepareDesktopScreen, watchDisplayMetrics, type PlayerDisplay } from '../player/playerDisplays';
@@ -196,10 +196,9 @@ export class PlayerWindowService {
    * Toggle the DM's camera freeze and return the new frozen state. Where players are not shown
    * the presented scene yet there is nothing to freeze them on, and the DM is told so.
    */
-  public toggleCameraFreeze(): boolean {
+  public toggleCameraFreeze(show: (camera: PlayerCameraState) => void = () => undefined): boolean {
     if (this.frozenCamera) {
-      this.setFrozenCamera(null);
-      new Notice(t('player.unfrozen'));
+      this.unfreezeCamera(show);
       return false;
     }
     this.freezeCamera();
@@ -212,9 +211,11 @@ export class PlayerWindowService {
    * Players stay where they are. False when nothing is frozen.
    */
   public unfreezeCamera(show: (camera: PlayerCameraState) => void): boolean {
-    const camera = this.frozenCamera;
-    if (!camera) return false;
-    show({ ...camera });
+    const frozen = this.frozenCamera;
+    if (!frozen) return false;
+    const camera = cameraFramingPicture(frozen, this.streamSource?.getScreen?.());
+    show(camera);
+    if (this.presentation.holdsPan()) this.presentation.adoptDmCamera(camera);
     this.setFrozenCamera(null);
     new Notice(t('player.unfrozen'));
     return true;

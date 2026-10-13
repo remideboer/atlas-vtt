@@ -107,10 +107,16 @@ describe('player camera freeze', () => {
     expect(shown(lastFrame())).toEqual(before);
     expect(session.camera).toEqual({ centerX: 100, centerY: 200, scale: 2, width: 400, height: 300 });
 
-    service.toggleCameraFreeze();
+    const shownToGm: PlayerCameraState[] = [];
+    service.toggleCameraFreeze((camera) => {
+      shownToGm.push(camera);
+      setDmCamera(camera);
+    });
     nextFrame();
-    expect(lastFrame()).toMatchObject({ centerX: 900, centerY: 900 });
-    expect(session).toMatchObject({ frozen: false, camera: { centerX: 900, centerY: 900, scale: 3 } });
+    // The pane is 800 wide and the frozen picture is 400 world px, so the GM zoom is 2.
+    expect(shownToGm).toEqual([{ centerX: 100, centerY: 200, scale: 2 }]);
+    expect(shown(lastFrame())).toEqual(before);
+    expect(session).toMatchObject({ frozen: false, camera: { centerX: 100, centerY: 200, scale: 2 } });
   });
 
   it('freezes the picture players are shown when their zoom is locked, and keeps it while the DM zooms', () => {
@@ -128,6 +134,18 @@ describe('player camera freeze', () => {
     nextFrame();
     nextFrame();
 
+    expect(lastFrame()).toEqual(before);
+    expect(shown(lastFrame())).toEqual(shown(before));
+
+    const shownToGm: PlayerCameraState[] = [];
+    service.unfreezeCamera((camera) => {
+      shownToGm.push(camera);
+      setDmCamera(camera);
+    });
+    nextFrame();
+    expect(shownToGm[0]?.centerX).toBeCloseTo(before.centerX, 4);
+    expect(shownToGm[0]?.centerY).toBeCloseTo(before.centerY, 4);
+    expect(shownToGm[0]?.scale).toBeCloseTo(800 / shown(before)[2], 4);
     expect(lastFrame()).toEqual(before);
     expect(shown(lastFrame())).toEqual(shown(before));
   });
