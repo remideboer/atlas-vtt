@@ -10,7 +10,6 @@ export const palette = {
   'palette.footer.navigate': 'to navigate',
   'palette.footer.select': 'to select',
   'palette.footer.switchTabs': 'to switch tabs',
-  'palette.freezePlayerCamera': 'Freeze Player Camera',
   'palette.gridAppearance': 'Grid appearance',
   'palette.gridSettings': 'Grid settings',
   'palette.localPlayerViewSettings': 'Local player view settings',

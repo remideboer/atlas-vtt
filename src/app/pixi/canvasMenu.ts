@@ -8,7 +8,6 @@ export interface CanvasMenuActions {
   rotation: PlayerRotation;
   mapOrientation: MapOrientation;
   zoomLocked: boolean;
-  frozen: boolean;
   paused: boolean;
   actualSize: boolean;
   sendMap(): void;
@@ -16,8 +15,6 @@ export interface CanvasMenuActions {
   openScreenSetup(): void;
   openPlayerWindow(): void;
   togglePause(): void;
-  toggleFreeze(): void;
-  unfreezeCamera(): void;
   toggleZoomLock(): void;
   setRotation(rotation: PlayerRotation): void;
   setMapOrientation(orientation: MapOrientation): void;
@@ -54,20 +51,6 @@ export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[
         icon: 'pause',
         checked: actions.paused,
         onClick: () => actions.togglePause(),
-      },
-      {
-        type: 'item',
-        label: t('player.freezeCamera'),
-        icon: 'lock',
-        checked: actions.frozen,
-        onClick: () => actions.toggleFreeze(),
-      },
-      {
-        type: 'item',
-        label: t('player.unfreezeCamera'),
-        icon: 'unlock',
-        disabled: !actions.frozen,
-        onClick: () => actions.unfreezeCamera(),
       },
       {
         type: 'item',

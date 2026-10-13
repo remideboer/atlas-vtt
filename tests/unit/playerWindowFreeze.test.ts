@@ -150,6 +150,62 @@ describe('player camera freeze', () => {
     expect(shown(lastFrame())).toEqual(shown(before));
   });
 
+  it('moves the presented scene onto the frozen picture, then pans both from there', () => {
+    const { service, source, setDmCamera, nextFrame, lastFrame } = setup();
+    source.showCamera = (camera): void => { setDmCamera(camera); };
+    setDmCamera({ centerX: 100, centerY: 200, scale: 1 });
+    nextFrame();
+    expect(service.togglePlayerZoomLock()).toBe(true);
+    nextFrame();
+    const before = lastFrame();
+
+    service.toggleCameraFreeze();
+    setDmCamera({ centerX: 900, centerY: 900, scale: 4 });
+    nextFrame();
+
+    service.unfreezeCamera(() => undefined);
+    const gm = source.getCamera?.();
+    expect(gm?.centerX).toBeCloseTo(before.centerX, 4);
+    expect(gm?.centerY).toBeCloseTo(before.centerY, 4);
+    nextFrame();
+    expect(lastFrame().centerX).toBeCloseTo(before.centerX, 4);
+    expect(lastFrame().centerY).toBeCloseTo(before.centerY, 4);
+
+    const scale = gm?.scale ?? before.scale;
+    setDmCamera({ centerX: before.centerX + 40, centerY: before.centerY - 25, scale });
+    nextFrame();
+    expect(lastFrame().centerX).toBeCloseTo(before.centerX + 40, 4);
+    expect(lastFrame().centerY).toBeCloseTo(before.centerY - 25, 4);
+  });
+
+  it('resuming a pause places the GM map on the picture players were showing', () => {
+    const { service, source, setDmCamera, nextFrame, lastFrame } = setup();
+    source.showCamera = (camera): void => { setDmCamera(camera); };
+    source.store?.setState({ mapLoaded: true, isMapLoading: false, mapPath: 'scene-a.atlasmap' });
+    setDmCamera({ centerX: 100, centerY: 200, scale: 1 });
+    nextFrame();
+    const before = lastFrame();
+
+    expect(service.togglePlayerPause()).toBe(true);
+    setDmCamera({ centerX: 900, centerY: 900, scale: 4 });
+    nextFrame();
+    expect(service.isPlayerPaused()).toBe(true);
+
+    expect(service.togglePlayerPause()).toBe(false);
+    const gm = source.getCamera?.();
+    expect(gm?.centerX).toBeCloseTo(before.centerX, 4);
+    expect(gm?.centerY).toBeCloseTo(before.centerY, 4);
+    nextFrame();
+    expect(lastFrame().centerX).toBeCloseTo(before.centerX, 4);
+    expect(lastFrame().centerY).toBeCloseTo(before.centerY, 4);
+
+    const scale = gm?.scale ?? before.scale;
+    setDmCamera({ centerX: before.centerX + 40, centerY: before.centerY - 25, scale });
+    nextFrame();
+    expect(lastFrame().centerX).toBeCloseTo(before.centerX + 40, 4);
+    expect(lastFrame().centerY).toBeCloseTo(before.centerY - 25, 4);
+  });
+
   it('freezes the picture on the player screen at actual size, and keeps it while the DM zooms', () => {
     const { service, setDmCamera, nextFrame, lastFrame } = setup({ gridSize: 70 });
     setDmCamera({ centerX: 100, centerY: 200, scale: 1 });

@@ -66,7 +66,6 @@ import { frameView } from './services/playerFrameDemand';
 import { MapController } from './MapController';
 import { mapTurnMove, readMapOrientation, turnedGrid, type MapOrientation } from './grid/mapOrientation';
 import { NO_STRETCH, readMapStretch, sameStretch, type MapStretch } from './grid/mapStretch';
-import { showCamera } from './pixi/viewCamera';
 import { fitZoomRange } from './pixi/fitMapRect';
 
 export class PixiRendererOrchestrator { // Renamed class
@@ -738,12 +737,10 @@ export class PixiRendererOrchestrator { // Renamed class
       if (this._isDestroyed || !state.isGMView || state.isPlayerView || !state.mapLoaded) return;
       const players = PlayerWindowService.getInstance();
       const presentation = players?.playerPresentation();
-      const viewport = this.pixiAppManager.getViewport();
       openContextMenuGlobal(canvasMenuEntries({
         rotation: presentation?.rotation ?? 0,
         mapOrientation: readMapOrientation(state.grid?.mapOrientation),
         zoomLocked: presentation?.isZoomLocked() ?? false,
-        frozen: players?.isFrozen() ?? false,
         paused: players?.isPlayerPaused() ?? false,
         actualSize: presentation?.isActualSize() ?? false,
         sendMap: () => { void presentActiveTab(this.obsApp); },
@@ -754,12 +751,6 @@ export class PixiRendererOrchestrator { // Renamed class
         openScreenSetup: () => { void openPlayerScreenSetup(this.obsApp); },
         openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },
         togglePause: () => { players?.togglePlayerPause(); },
-        toggleFreeze: () => {
-          players?.toggleCameraFreeze((camera) => { if (viewport) showCamera(viewport, camera); });
-        },
-        unfreezeCamera: () => {
-          players?.unfreezeCamera((camera) => { if (viewport) showCamera(viewport, camera); });
-        },
         toggleZoomLock: () => { players?.togglePlayerZoomLock(); },
         setRotation: (rotation) => {
           if (players) players.setPlayerRotation(rotation);

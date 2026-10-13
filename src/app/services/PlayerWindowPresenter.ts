@@ -8,6 +8,7 @@ import type { SceneTab } from '../types/sceneTabTypes';
 import { t } from '../i18n';
 import type { PlayerFrameSource } from './PlayerFrameMirror';
 import { viewportCamera } from './playerFrame';
+import { showCamera as placeCamera } from '../pixi/viewCamera';
 import { PlayerWindowService } from './PlayerWindowService';
 import { presentedSceneOf, readPresentedScene, type PresentedScene, type PresentedSceneStore } from './presentedScene';
 import { rendersOnChange, requestRender, setBeforeRender } from '../pixi/RenderScheduler';
@@ -253,6 +254,11 @@ async function waitForRenderedFrameSource(view: AtlasView): Promise<PlayerFrameS
     getCamera: () => {
       const viewport = view.serviceManager.getRendererService().getViewport();
       return viewport ? viewportCamera(viewport) : undefined;
+    },
+    showCamera: (camera): void => {
+      const viewport = view.serviceManager.getRendererService().getViewport();
+      if (viewport) placeCamera(viewport, camera);
+      requestRender(app);
     },
     getScreen: () => {
       const viewport = view.serviceManager.getRendererService().getViewport();

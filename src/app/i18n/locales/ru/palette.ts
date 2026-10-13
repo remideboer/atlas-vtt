@@ -10,7 +10,6 @@ export const palette: Translation = {
   'palette.footer.navigate': 'навигация',
   'palette.footer.select': 'выбор',
   'palette.footer.switchTabs': 'смена вкладки',
-  'palette.freezePlayerCamera': 'Заморозить камеру игроков',
   'palette.gridAppearance': 'Вид сетки',
   'palette.gridSettings': 'Настройки сетки',
   'palette.localPlayerViewSettings': 'Настройки локального экрана игроков',

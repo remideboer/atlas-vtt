@@ -76,6 +76,10 @@ export class PlayerWindowService {
   private shownCamera: PlayerCameraState | null = null;
   /** Last player frame, shown unchanged while the DM works on another scene tab. */
   private heldFrame: HTMLCanvasElement | null = null;
+  /** The picture Pause is holding, so resuming can put the GM map back on it. */
+  private pausedPicture: PlayerCameraState | null = null;
+  /** Pause was chosen from the menu. A still taken only to leave the scene is not one. */
+  private userPaused = false;
   /** Crossfade from the previous map, still playing after the DM presented another scene. */
   private mapTransition: SceneTransition | null = null;
   private static instance: PlayerWindowService | null = null;
@@ -207,6 +211,14 @@ export class PlayerWindowService {
   }
 
   /**
+   * The presented scene places its own viewport when the freeze ends, and asks for the render
+   * itself. A caller then leaves that render alone.
+   */
+  public presentsCamera(): boolean {
+    return this.streamSource?.showCamera !== undefined;
+  }
+
+  /**
    * Put the DM's view on the frozen player picture, then let the cameras follow each other again.
    * Players stay where they are. False when nothing is frozen.
    */
@@ -214,8 +226,9 @@ export class PlayerWindowService {
     const frozen = this.frozenCamera;
     if (!frozen) return false;
     const camera = cameraFramingPicture(frozen, this.streamSource?.getScreen?.());
+    this.streamSource?.showCamera?.(camera);
     show(camera);
-    if (this.presentation.holdsPan()) this.presentation.adoptDmCamera(camera);
+    if (this.presentation.holdsPan()) this.presentation.adoptDmCamera(this.streamSource?.getCamera?.() ?? camera);
     this.setFrozenCamera(null);
     new Notice(t('player.unfrozen'));
     return true;
@@ -228,6 +241,33 @@ export class PlayerWindowService {
    */
   public freezeCamera(camera?: PlayerCameraState): void {
     this.setFrozenCamera(camera ?? this.cameraOfPicture() ?? this.cameraPlayersSee());
+  }
+
+  /**
+   * The world the player window is painting: its centre and the rectangle that fills the window.
+   * None while a still is already up, or the scene cannot be shown.
+   */
+  private pictureOnScreen(): PlayerCameraState | null {
+    const source = this.streamSource;
+    const canvas = this.playerCanvas();
+    const window = canvas ? this.windowScreen(canvas) : null;
+    const camera = this.frozenCamera ?? source?.getCamera?.();
+    if (!source || !window || !camera || this.heldFrame || cannotRender(source)) return null;
+    const screen = source.getScreen?.();
+    const frame = presentedPlayerFrame({
+      window,
+      pane: screen,
+      camera,
+      gmScreen: screen,
+      rotation: this.presentation.rotation,
+      zoomLock: this.frameLock(),
+      frozen: this.frozenCamera !== null,
+    });
+    if (!frame || !(frame.scale > 0)) return null;
+    const width = frame.width / frame.resolution / frame.scale;
+    const height = frame.height / frame.resolution / frame.scale;
+    if (!(width > 0) || !(height > 0) || !Number.isFinite(width) || !Number.isFinite(height)) return null;
+    return { centerX: frame.centerX, centerY: frame.centerY, scale: frame.scale, width, height };
   }
 
   /**
@@ -275,37 +315,60 @@ export class PlayerWindowService {
     return this.playerWindow !== null && !this.playerWindow.closed;
   }
 
-  /** True while players are on a still of the last frame, including a pause chosen from the map menu. */
+  /** True while Pause is holding the picture, including a camera freeze restored from an older session. */
   public isPlayerPaused(): boolean {
-    return this.heldFrame !== null;
+    return this.userPaused || this.frozenCamera !== null;
   }
 
   /**
-   * Hold the picture players see, or resume the presented scene. Resuming while this view
-   * shows another scene leaves the hold in place.
+   * Hold the picture players see, or put the GM map on that picture and follow it again.
+   * Resuming while this view shows another scene leaves the hold in place.
    */
   public togglePlayerPause(): boolean {
     if (!this.isWindowOpen()) {
       new Notice(t('player.notOpen'));
       return false;
     }
-    if (this.heldFrame) {
+    if (this.userPaused || this.frozenCamera) {
       const source = this.resumableSource();
       if (!source) {
         new Notice(t('player.resumeOnScene'));
         return true;
       }
-      this.releaseHeldFrame(source);
+      this.resumeOnPicture(source);
       new Notice(t('player.viewResumed'));
       return false;
     }
+    const picture = this.pictureOnScreen();
+    if (!picture) {
+      new Notice(t('player.nothingToFreeze'));
+      return false;
+    }
+    this.pausedPicture = picture;
+    this.userPaused = true;
     this.holdCurrentFrame();
     if (!this.heldFrame) {
+      this.userPaused = false;
+      this.pausedPicture = null;
       new Notice(t('player.nothingToFreeze'));
       return false;
     }
     new Notice(t('player.viewPaused'));
     return true;
+  }
+
+  /** Move the GM viewport onto the held picture, then let the live scene show again. */
+  private resumeOnPicture(source: PlayerFrameSource): void {
+    const picture = this.pausedPicture ?? this.frozenCamera;
+    if (picture) {
+      const camera = cameraFramingPicture(picture, source.getScreen?.());
+      source.showCamera?.(camera);
+      if (this.presentation.holdsPan()) this.presentation.adoptDmCamera(source.getCamera?.() ?? camera);
+    }
+    this.userPaused = false;
+    this.pausedPicture = null;
+    if (this.frozenCamera) this.setFrozenCamera(null);
+    if (this.heldFrame) this.releaseHeldFrame(source);
   }
 
   /** The live source of the scene players are watching, when this view is showing that scene. */
@@ -364,6 +427,12 @@ export class PlayerWindowService {
     this.pinFrozenCamera();
     this.mirror?.markStale();
     this.presentScene();
+    // A chosen pause stays until the GM resumes it. Coming back to the scene only drops a still
+    // that was taken so players would not see another tab.
+    if (this.userPaused) {
+      this.followSource();
+      return;
+    }
     this.heldFrame = null;
     this.syncHeldTransform();
     this.updateFreezeIndicator();
@@ -911,6 +980,8 @@ export class PlayerWindowService {
     this.playerView = null;
     this.streamSource = null;
     this.heldFrame = null;
+    this.pausedPicture = null;
+    this.userPaused = false;
     this.syncHeldTransform();
     this.frozenCamera = null;
     this.shownCamera = null;

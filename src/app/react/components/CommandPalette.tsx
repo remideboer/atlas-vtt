@@ -16,7 +16,6 @@ import {
   FlaskConical,
   Grid,
   Settings,
-  Snowflake,
   MonitorUp,
   MonitorPlay,
   AppWindow,
@@ -28,13 +27,9 @@ import {
 } from 'lucide-react';
 import { CoinIcon } from './CoinIcon';
 import { Notice } from 'obsidian';
-import { useStore } from 'zustand';
 import { useAtlasStore, useViewStoreHook } from '../ViewStoreContext';
 import { useAtlasUI } from '../root/AtlasUIContext';
-import { PlayerWindowService } from '../../services/PlayerWindowService';
 import { openPlayerWindow, presentActiveTab } from '../../services/PlayerWindowPresenter';
-import { showCamera } from '../../pixi/viewCamera';
-import { playerWindowStore } from '../../stores/playerWindowStore';
 import { debounce } from '../../../utils/debounce';
 import { cn } from '../../../utils/cn';
 import { isShortcutScopeActive } from '../../utils/activeLeafGuard';
@@ -95,7 +90,6 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
   const store = useViewStoreHook();
   const setActiveTool = useAtlasStore(state => state.setActiveTool);
   const { app, view } = useAtlasUI();
-  const isPlayerWindowFrozen = useStore(playerWindowStore, (s) => s.isFrozen);
   const isPlayerMode = view?.isInPlayerMode?.() ?? false;
   const setPlayerMode = (mode: boolean): void => view?.setPlayerMode?.(mode);
 
@@ -299,23 +293,6 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       },
       isToggle: true,
       isActive: isPlayerMode,
-    },
-    {
-      id: "freeze-player-camera",
-      icon: <Snowflake />,
-      label: t('palette.freezePlayerCamera'),
-      section: "mode",
-      action: () => {
-        const service = PlayerWindowService.getInstance();
-        if (service?.isWindowOpen()) {
-          const viewport = view?.serviceManager.getRendererService().getViewport();
-          service.toggleCameraFreeze((camera) => { if (viewport) showCamera(viewport, camera); });
-        } else {
-          new Notice(t('palette.noPlayerWindow'));
-        }
-      },
-      isToggle: true,
-      isActive: isPlayerWindowFrozen,
     },
     {
       id: "open-player-window",

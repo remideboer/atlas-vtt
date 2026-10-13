@@ -6,8 +6,8 @@ export interface ViewCamera {
 }
 
 /** Puts the viewport's camera at `camera`. */
-export function showCamera(viewport: { setZoom(scale: number): unknown; moveCenter(x: number, y: number): unknown }, camera: ViewCamera): void {
-  // The zoom first: moveCenter places the viewport by its current scale.
-  viewport.setZoom(camera.scale);
+export function showCamera(viewport: { setZoom(scale: number, center?: boolean): unknown; moveCenter(x: number, y: number): unknown }, camera: ViewCamera): void {
+  // Keep the centre through the zoom: moveCenter then places the picture's centre at the scale just set.
+  viewport.setZoom(camera.scale, true);
   viewport.moveCenter(camera.centerX, camera.centerY);
 }

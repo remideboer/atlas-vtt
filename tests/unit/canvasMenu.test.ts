@@ -7,7 +7,6 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     rotation: 0,
     mapOrientation: 0,
     zoomLocked: false,
-    frozen: false,
     paused: false,
     actualSize: false,
     sendMap: vi.fn(),
@@ -15,8 +14,6 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     openScreenSetup: vi.fn(),
     openPlayerWindow: vi.fn(),
     togglePause: vi.fn(),
-    toggleFreeze: vi.fn(),
-    unfreezeCamera: vi.fn(),
     toggleZoomLock: vi.fn(),
     setRotation: vi.fn(),
     setMapOrientation: vi.fn(),
@@ -37,31 +34,21 @@ describe('blank canvas menu', () => {
     expect(rotation.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([false, true, false, false]);
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands submenu');
     const pause = commands.children[4];
-    const unfreeze = commands.children[6];
-    const zoom = commands.children[7];
+    const zoom = commands.children[5];
     expect(pause?.type).toBe('item');
     expect(zoom?.type).toBe('item');
     if (pause?.type === 'item') expect(pause.checked).toBe(true);
     if (zoom?.type === 'item') expect(zoom.checked).toBe(true);
-    if (unfreeze?.type === 'item') expect(unfreeze.disabled).toBe(true);
     const map = menu[2];
     if (map?.type !== 'submenu' || typeof map.children === 'function') throw new Error('map submenu');
     expect(map.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([true, false, false, false]);
   });
 
-  it('unfreezes only while the camera is frozen and turns the map', () => {
-    const menuActions = actions({ frozen: true, mapOrientation: 180 });
+  it('turns the map by a quarter from the menu', () => {
+    const menuActions = actions({ mapOrientation: 180 });
     const menu = canvasMenuEntries(menuActions);
-    const commands = menu[0];
     const map = menu[2];
-    if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands');
     if (map?.type !== 'submenu' || typeof map.children === 'function') throw new Error('map');
-    const unfreeze = commands.children[6];
-    if (unfreeze?.type === 'item') {
-      expect(unfreeze.disabled).toBe(false);
-      unfreeze.onClick();
-    }
-    expect(menuActions.unfreezeCamera).toHaveBeenCalledOnce();
     const quarter = map.children[1];
     if (quarter?.type === 'item') quarter.onClick();
     expect(menuActions.setMapOrientation).toHaveBeenCalledWith(90);

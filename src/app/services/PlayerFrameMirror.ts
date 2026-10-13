@@ -54,6 +54,8 @@ export interface PlayerFrameSource extends DemandRegions {
   rollSources?: PlayerRollSources;
   /** The DM's camera, with the world rectangle the DM's screen shows through it. */
   getCamera?(): PlayerCameraState | undefined;
+  /** Puts the presented scene's viewport on `camera` and asks for a render. */
+  showCamera?(camera: PlayerCameraState): void;
   /** The DM's screen: what a camera without a rectangle of its own is centred in, and the pixels the players' picture never has fewer of. */
   getScreen?(): Screen | undefined;
   /** False while nothing can be rendered (a lost graphics context): players keep the last frame. */
