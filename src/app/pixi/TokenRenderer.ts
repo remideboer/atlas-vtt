@@ -48,6 +48,7 @@ import type { HexLinkPointerHandlers } from './hexLinks/HexLinkInteraction';
 import type { LightPointerHandlers } from './lighting/LightInteraction';
 import { runInBackground } from '../utils/backgroundTask';
 import { isModHeld } from '../keyboard/modKey';
+import { tokenStatblockAnchor } from '../services/NotePreviewUIManager';
 
 /** What the lighting controller answers about a right-click on a door's badge. */
 export interface DoorMenuHandlers {
@@ -1864,8 +1865,30 @@ export class TokenRenderer {
     }
   };
 
-  private onCanvasDoubleClick = (): void => {
-    if (this.store.getState().activeTool === 'wall') this.wallDoubleClickHandler?.();
+  private onCanvasDoubleClick = (e: MouseEvent): void => {
+    const { activeTool, isPlayerView, objects } = this.store.getState();
+    if (activeTool === 'wall') {
+      this.wallDoubleClickHandler?.();
+      return;
+    }
+    if (isPlayerView || (activeTool !== 'select' && activeTool !== 'move')) return;
+
+    const canvas = this.pixiApp?.canvas;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const world = this.viewport.toWorld(e.clientX - rect.left, e.clientY - rect.top);
+    const tokenId = this.hitTestTokens(world.x, world.y);
+    if (!tokenId) return;
+    const token = objects.tokens[tokenId];
+    if (!token || token.kind !== 'character') return;
+
+    const pin = tokenStatblockAnchor({ ...token, id: token.id });
+    if (!pin) return;
+    this.eventBus.emit('show-token-statblock', {
+      pin,
+      screenX: e.clientX,
+      screenY: e.clientY,
+    });
   };
 
   /**

@@ -57,6 +57,7 @@ export function insertBlankToken(
     name: t('editToken.namePlaceholder'),
     size,
     isHidden,
+    hideBarsFromPlayers: true,
     ...(vision && { vision }),
   } as TokenInput;
   const ids = store.getState().addTokens([blank]);

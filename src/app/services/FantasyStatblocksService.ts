@@ -62,6 +62,15 @@ export function resolveLayout(app: App, nameOrId?: string): StatblockLayout | nu
   return manager.getDefaultLayout() ?? null;
 }
 
+/** Names of every Fantasy Statblocks layout currently installed. */
+export function listLayoutNames(app: App): string[] {
+  const manager = getLayoutManager(app);
+  if (!manager) return [];
+  return manager.getAllLayouts()
+    .map((layout) => layout.name)
+    .filter((name): name is string => typeof name === 'string' && name.length > 0);
+}
+
 /** The layout a creature should render with, honouring its own override. */
 export function layoutForCreature(
   app: App,

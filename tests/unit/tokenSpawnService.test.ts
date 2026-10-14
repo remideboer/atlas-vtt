@@ -21,13 +21,26 @@ const framed: TokenAsset = { id: 'knight', name: 'Knight', type: 'tokens', image
 
 /** An Atlas view showing `mapPath` whose store records the tokens added to it. */
 function mapView(mapPath: string | null = 'maps/cave.atlasmap', isMapLoading = false) {
-  const viewport = { screenWidth: 800, screenHeight: 600, toWorld: (p: { x: number; y: number }) => p, scale: { x: 1 } };
+  const viewport = {
+    screenWidth: 800,
+    screenHeight: 600,
+    toWorld: (x: number | { x: number; y: number }, y?: number) => (
+      typeof x === 'object' ? x : { x, y: y ?? 0 }
+    ),
+    scale: { x: 1 },
+  };
   const spawned: Array<Record<string, unknown>> = [];
   const addTokens = vi.fn((tokens: unknown[]) => tokens.map((data) => { spawned.push(data as Record<string, unknown>); return `tok_${spawned.length}`; }));
   const setSelection = vi.fn();
   const view = {
     leaf: {},
-    serviceManager: { getRendererService: () => ({ getViewport: () => viewport, getGridSystem: () => null }) },
+    serviceManager: {
+      getRendererService: () => ({
+        getViewport: () => viewport,
+        getGridSystem: () => null,
+        getApp: () => ({ canvas: document.createElement('canvas') }),
+      }),
+    },
     getStore: () => ({ getState: () => ({ mapPath, isMapLoading, addTokens, setSelection }) }),
   } as unknown as AtlasView;
   return { view, spawned, addTokens, setSelection };
@@ -84,6 +97,18 @@ describe('token spawning keeps asset defaults', () => {
     await spawnTokenAsset(ctx, unframed, 1);
     expect(spawned[0]).not.toHaveProperty('resources');
     expect(spawned[0]).not.toHaveProperty('hp');
+  });
+
+  it('hides resource bars from the player view by default', async () => {
+    const { ctx, spawned } = setup();
+    await spawnTokenAsset(ctx, unframed, 1);
+    expect(spawned[0]).toMatchObject({ hideBarsFromPlayers: true });
+  });
+
+  it('keeps bars player-visible when spawn opts out', async () => {
+    const { ctx, spawned } = setup();
+    await spawnTokenAsset(ctx, unframed, 1, { hideBarsFromPlayers: false });
+    expect(spawned[0]).not.toHaveProperty('hideBarsFromPlayers');
   });
 
   it('skips assets that have no image path', async () => {

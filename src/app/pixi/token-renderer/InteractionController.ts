@@ -39,6 +39,7 @@ import { tokenLightingEntries } from '../../react/components/context-menu/tokenL
 import { mapLightPresets } from '../../services/mapCollectionRules';
 import { conditionsSubmenu } from '../../react/components/context-menu/conditionsMenu';
 import { holdTokens } from '../../lighting/sightOnDrop';
+import { tokenStatblockAnchor } from '../../services/NotePreviewUIManager';
 import { t } from '../../i18n';
 
 interface DragState {
@@ -644,7 +645,22 @@ export class InteractionController implements ITokenInteractionController {
     // Statblock linking
     const obsApp = this.obsApp;
     const statblockPath = character?.statblockPath;
-    if (statblockPath) {
+    if (statblockPath && character) {
+      const anchor = tokenStatblockAnchor({ ...character, id: token.id });
+      if (anchor && !this.isPlayerView) {
+        entries.push({
+          type: 'item',
+          label: t('token.showStatblock'),
+          icon: 'book-open',
+          onClick: () => {
+            this.eventBus.emit('show-token-statblock', {
+              pin: anchor,
+              screenX: e.clientX,
+              screenY: e.clientY,
+            });
+          },
+        });
+      }
       entries.push({
         type: 'item',
         label: t('token.editStatblock'),

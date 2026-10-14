@@ -6,6 +6,7 @@ import type { TokenVitals } from './statblockVitalsSync';
 import { NotePreviewWindow } from './NotePreviewWindow';
 import { StatblockPreviewWindow } from './StatblockPreviewWindow';
 import { hasCreatureForNotePath } from './FantasyStatblocksService';
+import { hasBestiaryFrontmatter } from './statblockNoteSource';
 import { MapLinkPreview } from './MapLinkPreview';
 import { linkedFilePath, linkedMapPath, linkedSceneFile } from './sceneLinks';
 import { runInBackground } from '../utils/backgroundTask';
@@ -15,6 +16,29 @@ import { isModHeld } from '../keyboard/modKey';
 import type { ViewAtlasStore } from '../storeFactory';
 import type { TokenRollContext } from '../types/diceRollOrigin';
 import { captureRollContext } from '../tools/diceRollOrigins';
+import type { Character } from '../types';
+
+/** Anchor for a map token's linked statblock preview (hover, menu, or double-click). */
+export function tokenStatblockAnchor(
+  token: Character & { id: string },
+): TokenPreviewAnchor | null {
+  const notePath = token.statblockPath?.trim();
+  if (!notePath) return null;
+  return {
+    id: token.id,
+    notePath,
+    x: token.x,
+    y: token.y,
+    type: 'token',
+    name: token.name,
+    resources: token.resources,
+    imagePath: token.imagePath,
+    ringColor: token.ringColor,
+    showRing: token.showRing,
+    instanceNumber: token.instanceNumber,
+    overriddenMax: token.overriddenMax,
+  };
+}
 
 /**
  * A hovered token presented to the preview system like a pin on its linked
@@ -139,6 +163,16 @@ export class NotePreviewUIManager {
       }
     });
 
+    // Double-click / context menu: sticky FantasyStatblock that stays until closed
+    this.eventBus.on('show-token-statblock', (data: {
+      pin: TokenPreviewAnchor;
+      screenX: number;
+      screenY: number;
+      originContext?: TokenRollContext;
+    }) => {
+      this.showTokenStatblock(data.pin, data.screenX, data.screenY, data.originContext);
+    });
+
     // Bind methods to preserve 'this' context
     this.boundHandleKeyDown = this.handleKeyDown.bind(this);
     this.boundHandleKeyUp = this.handleKeyUp.bind(this);
@@ -257,6 +291,24 @@ export class NotePreviewUIManager {
     );
   }
 
+  /**
+   * Opens a sticky FantasyStatblock for a map token (double-click or Show Statblock).
+   * Survives Cmd release; closed with its close control or Escape while focused.
+   */
+  public showTokenStatblock(
+    pin: TokenPreviewAnchor,
+    screenX: number,
+    screenY: number,
+    originContext?: TokenRollContext,
+  ): void {
+    const context = originContext
+      ?? captureRollContext(this.viewId, this.store.getState(), [pin.id]);
+    runInBackground(
+      this.showOrCreatePreview(pin, screenX, screenY, null, context, true),
+      'Showing token statblock',
+    );
+  }
+
   private handleKeyDown(e: KeyboardEvent): void {
     if (isModHeld(e)) {
       const justPressed = !this.isModifierKeyDown;
@@ -265,8 +317,31 @@ export class NotePreviewUIManager {
         this.showPreviewFor(this.currentHover);
       }
     } else if (e.key === 'Escape') {
-        this.hideAllUnpinnedPreviews(); // Or all previews including pinned ones
+        this.hideAllUnpinnedPreviews();
+        this.hideFocusedStickyStatblock();
     }
+  }
+
+  /** Escape closes a sticky statblock that holds focus (or the topmost sticky one). */
+  private hideFocusedStickyStatblock(): void {
+    const active = document.activeElement;
+    let topSticky: IPreviewWindow | null = null;
+    let topZ = -1;
+    for (const preview of this.activePreviews.values()) {
+      if (!preview.getIsPinned() || !(preview instanceof StatblockPreviewWindow)) continue;
+      const el = preview.element;
+      if (!el) continue;
+      if (active && (el === active || el.contains(active))) {
+        preview.hide(true);
+        return;
+      }
+      const z = Number.parseInt(el.style.zIndex || '0', 10);
+      if (z >= topZ) {
+        topZ = z;
+        topSticky = preview;
+      }
+    }
+    topSticky?.hide(true);
   }
 
   private handleKeyUp(e: KeyboardEvent): void {
@@ -294,6 +369,8 @@ export class NotePreviewUIManager {
     sourceLeaf?: WorkspaceLeaf | null,
     /** The scene a hovered token was hovered in; a statblock opened for it rolls for that scene. */
     originContext?: TokenRollContext,
+    /** Sticky FantasyStatblock (menu / double-click); survives Cmd release. */
+    sticky = false,
   ): Promise<void> {
 
     // First, check if we already have a preview for this exact pin
@@ -302,6 +379,12 @@ export class NotePreviewUIManager {
     );
     
     if (existingPreviewForPin) {
+      if (sticky && existingPreviewForPin instanceof StatblockPreviewWindow) {
+        existingPreviewForPin.setSticky(true);
+        this.raiseZIndex(existingPreviewForPin);
+        existingPreviewForPin.element?.focus({ preventScroll: true });
+        return;
+      }
       // If it's unpinned, update its position
       if (!existingPreviewForPin.getIsPinned()) {
         existingPreviewForPin.setPosition(screenX, screenY);
@@ -331,8 +414,9 @@ export class NotePreviewUIManager {
     const file = this.app.vault.getAbstractFileByPath(linkedFilePath(pin.notePath));
     if (file instanceof TFile) {
 
-      // Notes backed by a Fantasy Statblocks creature → rich statblock preview for tokens
-      const isStatblock = hasCreatureForNotePath(file.path);
+      // Bestiary entry or frontmatter `statblock: true` (fresh 5e.tools notes before FS parses)
+      const isStatblock = hasCreatureForNotePath(file.path)
+        || hasBestiaryFrontmatter(this.app, file);
 
       if (isStatblock && 'type' in pin && pin.type === 'token') {
         const statblockPreview = new StatblockPreviewWindow(
@@ -344,6 +428,7 @@ export class NotePreviewUIManager {
           undefined,
           this.viewId,
           originContext,
+          sticky,
         );
         
         if (statblockPreview.element) {
@@ -351,6 +436,7 @@ export class NotePreviewUIManager {
           this.activePreviews.set(previewKey, statblockPreview);
           this.raiseZIndex(statblockPreview);
           statblockPreview.element.addEventListener('mousedown', () => this.raiseZIndex(statblockPreview));
+          if (sticky) statblockPreview.element.focus({ preventScroll: true });
         } else {
           console.warn('[NotePreviewUIManager] Statblock preview element is null');
         }

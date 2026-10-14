@@ -44,6 +44,16 @@ export interface AtlasSettings {
   statblockPane: { hintDismissed: boolean };
   /** The GM's toolbar layout, only what differs from the default; read with `getToolbarLayout`. */
   toolbar: StoredToolbarLayout;
+  /**
+   * Absolute path to a local 5e.tools checkout (the folder that contains `data/`).
+   * Empty disables bestiary insert from 5e.tools.
+   */
+  fiveEToolsPath: string;
+  /** Last insert-token tab and recent 5e.tools creature uids (newest first). */
+  insertTokenPicker: {
+    lastSource: 'library' | 'fiveETools';
+    recentFiveEUids: string[];
+  };
   localPlayerView: {
     // UI element visibility toggles
     showToolbar: boolean;
@@ -74,6 +84,11 @@ export const DEFAULT_SETTINGS: AtlasSettings = {
   experimental: {},
   statblockPane: { hintDismissed: false },
   toolbar: {},
+  fiveEToolsPath: '',
+  insertTokenPicker: {
+    lastSource: 'library',
+    recentFiveEUids: [],
+  },
   localPlayerView: {
     // UI element visibility defaults
     showToolbar: false, // Hide toolbar by default in player view

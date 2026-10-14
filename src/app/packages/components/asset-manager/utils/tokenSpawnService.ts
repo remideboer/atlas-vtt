@@ -1,5 +1,5 @@
 import { mapResources } from '../../../../resources/collectionResources';
-import type { ResourceDefinition } from '../../../../resources/resourceTypes';
+import type { ResourceDefinition, ResourceValue } from '../../../../resources/resourceTypes';
 import { Notice, App as ObsidianApp } from 'obsidian';
 import type { TokenAsset, AnyAsset, EncounterAsset } from '../types';
 import { loadStatblockOverrides, type StatblockOverrides } from './statblockLoader';
@@ -204,6 +204,7 @@ async function buildTokenData(
   { imagePath, name, statblockPath, size, showRing }: TokenSource,
   definitions: readonly ResourceDefinition[],
   visionDefaults: TokenVisionDefaults | undefined,
+  seededResources?: Record<string, ResourceValue>,
 ): Promise<TokenSpawnData> {
   const data: TokenSpawnData = {
     x: pos.x,
@@ -220,6 +221,10 @@ async function buildTokenData(
     data.statblockPath = statblockPath;
     const overrides = await loadStatblockOverrides(app, statblockPath, definitions);
     Object.assign(data, overrides);
+  }
+
+  if (seededResources && Object.keys(seededResources).length > 0) {
+    data.resources = { ...data.resources, ...seededResources };
   }
 
   const vision = placementVision(visionDefaults, Boolean(statblockPath));
@@ -253,6 +258,21 @@ function addSpawnedTokens(target: SpawnTarget, tokens: TokenInput[]): string[] {
 export interface SpawnTokenOptions {
   /** When true, each placed copy starts hidden from players. */
   isHidden?: boolean;
+  /**
+   * When true (the default), resource bars stay on the GM map only until the GM
+   * shows them. Pass false to follow the collection's player-visibility switches.
+   */
+  hideBarsFromPlayers?: boolean;
+  /**
+   * Resource values to apply after the linked statblock is read (e.g. HP from a
+   * 5e.tools insert while the note's metadata cache is still empty).
+   */
+  resources?: Record<string, ResourceValue>;
+}
+
+/** Bars stay off the player view until the GM shows them (token menu / Edit Token). */
+function placedHideBars(options?: Pick<SpawnTokenOptions, 'hideBarsFromPlayers'>): { hideBarsFromPlayers: true } | object {
+  return options?.hideBarsFromPlayers === false ? {} : { hideBarsFromPlayers: true as const };
 }
 
 /**
@@ -273,11 +293,20 @@ export async function spawnTokenAsset(
   if (!source) return [];
 
   // The statblock is read once; every copy shares that data at its own position.
-  const template = await buildTokenData(ctx.app, center, source, targetResources(ctx, target), spawnVisionDefaults(ctx, target));
+  const template = await buildTokenData(
+    ctx.app,
+    center,
+    source,
+    targetResources(ctx, target),
+    spawnVisionDefaults(ctx, target),
+    options?.resources,
+  );
+  const hideBars = placedHideBars(options);
   const tokens = Array.from({ length: count }, (_, i): TokenInput => ({
     ...structuredClone(template),
     ...gridPosition(i, count, center.x, center.y, pitch, gridSystem, template.size || 1),
     ...(options?.isHidden && { isHidden: true }),
+    ...hideBars,
   }));
   return addSpawnedTokens(target, tokens);
 }
@@ -336,7 +365,10 @@ export async function spawnEncounterTokens(
     }
     const source = await resolveTokenSource(ctx, token);
     if (source && imageExists(ctx.app, source.imagePath)) {
-      tokens.push(await buildTokenData(ctx.app, pos, source, definitions, visionDefaults));
+      tokens.push({
+        ...(await buildTokenData(ctx.app, pos, source, definitions, visionDefaults)),
+        ...placedHideBars(),
+      });
     }
   }
 
@@ -371,7 +403,10 @@ export async function spawnSelectedTokens(
     const source = await resolveTokenSource(ctx, tokenAsset);
     if (!source) continue;
     const pos = gridPosition(i, tokensToSpawn.length, center.x, center.y, pitch, gridSystem, source.size || 1);
-    tokens.push(await buildTokenData(ctx.app, pos, source, definitions, visionDefaults));
+    tokens.push({
+      ...(await buildTokenData(ctx.app, pos, source, definitions, visionDefaults)),
+      ...placedHideBars(),
+    });
   }
 
   return addSpawnedTokens(target, tokens);

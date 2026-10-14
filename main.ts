@@ -31,6 +31,7 @@ import { navigationSettingsSection } from './src/app/settings/navigationSettings
 import { diceSettingsSection } from './src/app/settings/diceSettingsSection';
 import { lightingSettingsSections } from './src/app/settings/lightingSettingsSection';
 import { mapImageCacheSettingsSection } from './src/app/settings/mapImageCacheSettingsSection';
+import { fiveEToolsSettingsSection } from './src/app/settings/fiveEToolsSettingsSection';
 import { registerDiceLookSync } from './src/app/plugin/diceLookSync';
 import { registerAccentColorSync } from './src/app/plugin/accentColorSync';
 import { registerDiceStageRelease } from './src/app/plugin/diceStageRelease';
@@ -126,6 +127,7 @@ export default class AtlasVTTPlugin extends Plugin {
       diceSettingsSection(this.settingsService),
       ...lightingSettingsSections(this.settingsService),
       mapImageCacheSettingsSection(() => TileDecoderClient.forApp(this.app)),
+      fiveEToolsSettingsSection(this.app, this.settingsService),
       hotkeySettingsSection(this.settingsService),
       onboardingSettingsSection(this.settingsService),
       changelogSettingsSection(this.settingsService, changelogService, this.manifest.version),

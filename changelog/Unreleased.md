@@ -15,6 +15,7 @@
 - Token size menus offer Tiny (½×½) and Small (same 1×1 footprint as Medium).
 - When creating a token, pick a transparency colour (or sample it from the image) to extend existing transparency into that colour, or to clear an opaque matching background from the image edge.
 - A token can keep its resource bars on the GM map while hiding them from the player view (Edit Token or the token menu), without clearing the values.
+- Insert token can search a local 5e.tools bestiary (path in Atlas settings), download that creature’s token art from 5e.tools, create a Fantasy Statblocks note, and place it on the map.
 
 ## Fixed
 

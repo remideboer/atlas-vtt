@@ -16,6 +16,7 @@ export const token: Translation = {
   'token.showBarsToPlayers': 'Показать полосы игрокам',
   'token.saveEncounter': 'Сохранить как стычку',
   'token.addInitiative': 'Добавить в инициативу',
+  'token.showStatblock': 'Показать статблок',
   'token.editStatblock': 'Изменить статблок',
   'token.linkFailed': 'Не удалось привязать статблок',
   'token.ringColor': 'Цвет кольца',

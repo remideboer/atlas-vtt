@@ -1,5 +1,6 @@
 @use '../react/components/statblock/statblock-preview-surface' as *;
 @use '../../../styles/tokens' as *;
+@use '../../../styles/mixins' as *;
 
 // Imperative CMD+hover preview window for tokens on the map, in the asset
 // manager and in the collection export and import dialogs (StatblockPreviewWindow.ts).
@@ -20,5 +21,74 @@
 
   &--closing {
     @include atlas-statblock-preview-closing;
+  }
+
+  // Passes the window's max-height into FantasyStatblock so .atlas-statblock-body scrolls.
+  &__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    > .atlas-fantasy-statblock,
+    > .atlas-statblock {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+  }
+
+  // Sticky (menu / double-click): stays until closed; drag from the header only.
+  &--sticky {
+    overflow: hidden;
+
+    .atlas-statblock-preview-window__header {
+      display: flex;
+      align-items: center;
+      gap: $spacing-s;
+      margin-bottom: $spacing-s;
+      flex-shrink: 0;
+      width: 100%;
+      min-height: var(--atlas-close-size, 28px);
+      cursor: grab;
+    }
+
+    .atlas-statblock-preview-window__drag {
+      flex: 1;
+      min-width: $spacing-xl;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .atlas-statblock-preview-window__title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: $font-ui-small;
+      font-weight: var(--font-semibold, 600);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .atlas-statblock-preview-window__close {
+      flex-shrink: 0;
+      cursor: default;
+
+      .atlas-close-btn {
+        cursor: pointer;
+      }
+    }
+
+    &.is-dragging,
+    &.is-dragging .atlas-statblock-preview-window__header {
+      cursor: grabbing;
+    }
+
+    &.is-dragging {
+      user-select: none;
+    }
   }
 }

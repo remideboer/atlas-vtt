@@ -16,6 +16,7 @@ export const token = {
   'token.showBarsToPlayers': 'Show bars to players',
   'token.saveEncounter': 'Save as Encounter',
   'token.addInitiative': 'Add to Initiative',
+  'token.showStatblock': 'Show Statblock',
   'token.editStatblock': 'Edit Statblock',
   'token.linkFailed': 'Could not link the statblock',
   'token.ringColor': 'Ring Color',
