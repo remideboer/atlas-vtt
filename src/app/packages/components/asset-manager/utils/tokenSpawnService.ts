@@ -250,13 +250,19 @@ function addSpawnedTokens(target: SpawnTarget, tokens: TokenInput[]): string[] {
 
 // ─── Public spawn functions ─────────────────────────────────────────
 
+export interface SpawnTokenOptions {
+  /** When true, each placed copy starts hidden from players. */
+  isHidden?: boolean;
+}
+
 /**
  * Spawn one or more copies of a single token asset on the map.
  */
 export async function spawnTokenAsset(
   ctx: SpawnContext,
   asset: TokenAsset,
-  count: number
+  count: number,
+  options?: SpawnTokenOptions,
 ): Promise<string[]> {
   const target = await getSpawnTarget(ctx);
   if (!target) return [];
@@ -271,6 +277,7 @@ export async function spawnTokenAsset(
   const tokens = Array.from({ length: count }, (_, i): TokenInput => ({
     ...structuredClone(template),
     ...gridPosition(i, count, center.x, center.y, pitch, gridSystem, template.size || 1),
+    ...(options?.isHidden && { isHidden: true }),
   }));
   return addSpawnedTokens(target, tokens);
 }

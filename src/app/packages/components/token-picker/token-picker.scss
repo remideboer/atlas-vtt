@@ -23,6 +23,46 @@
   height: 100%;
 }
 
+.token-picker-insert {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.token-picker-insert-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.token-picker-insert-option__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.token-picker-insert-option__label {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-normal);
+}
+
+.token-picker-insert-option__hint {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.token-picker-insert .token-picker-container {
+  flex: 1;
+  min-height: 0;
+}
+
 .token-picker-container {
   display: flex;
   flex-direction: column;

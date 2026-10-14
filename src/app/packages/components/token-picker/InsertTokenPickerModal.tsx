@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId, useState } from 'react';
 import { Modal, type App } from 'obsidian';
 import type { Root } from 'react-dom/client';
 import type { AtlasView } from '../../../atlas-view';
@@ -7,6 +7,7 @@ import { AssetService, type TokenAsset as ServiceTokenAsset } from '../../../ser
 import { insertBlankToken } from '../../../tools/insertBlankToken';
 import { ATLAS_NATIVE_MODAL_CLASSES } from '../../../ui/nativeModal';
 import { t } from '../../../i18n';
+import { ToggleSwitch } from '../primitives/Toggle';
 import { spawnTokenAsset, type SpawnContext } from '../asset-manager/utils/tokenSpawnService';
 import type { TokenAsset as SpawnTokenAsset } from '../asset-manager/types';
 import { TokenLibraryPickerContent, type PickableLibraryToken } from './TokenLibraryPickerContent';
@@ -83,6 +84,10 @@ function spawnAssetOf(token: ServiceTokenAsset): SpawnTokenAsset {
 }
 
 const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app, view, at, onClose }) => {
+  const [insertHidden, setInsertHidden] = useState(false);
+  const hiddenLabelId = useId();
+  const hiddenHintId = useId();
+
   const spawnCtx = (): SpawnContext => ({
     app,
     view,
@@ -92,11 +97,11 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
 
   const onPick = (pick: PickableLibraryToken | 'blank'): void => {
     if (pick === 'blank') {
-      insertBlankToken(app, view, at);
+      insertBlankToken(app, view, at, { isHidden: insertHidden });
       onClose();
       return;
     }
-    void spawnTokenAsset(spawnCtx(), spawnAssetOf(pick), 1)
+    void spawnTokenAsset(spawnCtx(), spawnAssetOf(pick), 1, { isHidden: insertHidden })
       .then(() => onClose())
       .catch((error) => {
         console.error('[InsertTokenPicker] Failed to spawn token:', error);
@@ -104,11 +109,29 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
   };
 
   return (
-    <TokenLibraryPickerContent
-      app={app}
-      selectLabel={t('picker.insert.select')}
-      blankLabel={t('picker.insert.blank')}
-      onPick={onPick}
-    />
+    <div className="token-picker-insert">
+      <div className="token-picker-insert-option">
+        <div className="token-picker-insert-option__text">
+          <span id={hiddenLabelId} className="token-picker-insert-option__label">
+            {t('picker.insert.hidden')}
+          </span>
+          <span id={hiddenHintId} className="token-picker-insert-option__hint">
+            {t('picker.insert.hiddenHint')}
+          </span>
+        </div>
+        <ToggleSwitch
+          labelledBy={hiddenLabelId}
+          aria-describedby={hiddenHintId}
+          value={insertHidden}
+          onChange={() => setInsertHidden((current) => !current)}
+        />
+      </div>
+      <TokenLibraryPickerContent
+        app={app}
+        selectLabel={t('picker.insert.select')}
+        blankLabel={t('picker.insert.blank')}
+        onPick={onPick}
+      />
+    </div>
   );
 };

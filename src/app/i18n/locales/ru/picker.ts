@@ -23,6 +23,8 @@ export const picker: Translation = {
   'picker.insert.failed': 'Не удалось загрузить выбор токена',
   'picker.insert.select': 'Выберите токен для размещения:',
   'picker.insert.blank': 'Пустой токен',
+  'picker.insert.hidden': 'Вставить скрытым от игроков',
+  'picker.insert.hiddenHint': 'Игроки не видят этот токен на карте и в инициативе',
   'picker.editArt.title': 'Выбор изображения токена',
   'picker.editArt.failed': 'Не удалось загрузить выбор изображения',
   'picker.editArt.select': 'Выберите изображение для токена:',

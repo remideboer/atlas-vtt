@@ -11,11 +11,24 @@ import { systemPresetsOf } from '../services/mapCollectionRules';
 import type { TokenInput } from '../types/viewState';
 import { t } from '../i18n';
 
+export interface InsertBlankTokenOptions {
+  /**
+   * Whether the blank starts hidden from players. Defaults to true (blank inserts
+   * open Edit Token so the GM can name it without revealing it).
+   */
+  isHidden?: boolean;
+}
+
 /**
- * Places a blank, player-hidden token at `at` (or the last map pointer / view centre),
+ * Places a blank token at `at` (or the last map pointer / view centre),
  * selects it, and opens Edit Token so the GM can name it and set visibility.
  */
-export function insertBlankToken(app: App, view: AtlasView | null, at?: Point | null): void {
+export function insertBlankToken(
+  app: App,
+  view: AtlasView | null,
+  at?: Point | null,
+  options?: InsertBlankTokenOptions,
+): void {
   if (!view || view.getStore().getState().isPlayerView) return;
   const store = view.getStore();
   const { mapPath, isMapLoading, mapLoaded } = store.getState();
@@ -33,6 +46,7 @@ export function insertBlankToken(app: App, view: AtlasView | null, at?: Point | 
     mapVisionDefaults(assets, mapPath, systemPresetsOf(app)),
     false,
   );
+  const isHidden = options?.isHidden !== false;
 
   // TokenInput is an Omit of the token union, so character-only fields need a cast (same as spawn).
   const blank: TokenInput = {
@@ -42,7 +56,7 @@ export function insertBlankToken(app: App, view: AtlasView | null, at?: Point | 
     kind: 'character',
     name: t('editToken.namePlaceholder'),
     size,
-    isHidden: true,
+    isHidden,
     ...(vision && { vision }),
   } as TokenInput;
   const ids = store.getState().addTokens([blank]);
