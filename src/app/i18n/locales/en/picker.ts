@@ -23,4 +23,8 @@ export const picker = {
   'picker.insert.failed': 'Failed to load insert token picker',
   'picker.insert.select': 'Select a token to place:',
   'picker.insert.blank': 'Blank token',
+  'picker.editArt.title': 'Choose token art',
+  'picker.editArt.failed': 'Failed to load token art picker',
+  'picker.editArt.select': 'Select art for this token:',
+  'picker.editArt.blank': 'Blank token',
 } as const satisfies Record<string, Message>;

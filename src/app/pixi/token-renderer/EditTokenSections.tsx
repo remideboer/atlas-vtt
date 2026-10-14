@@ -1,5 +1,6 @@
 import React, { useId } from 'react';
 import { ToggleSwitch } from '../../packages/components/primitives/Toggle';
+import { Button } from '../../packages/components/primitives/button';
 import type { ResourceDefinition, ResourceValue } from '../../resources/resourceTypes';
 import { NumberOverrideField } from './NumberOverrideField';
 import { t } from '../../i18n';
@@ -46,6 +47,10 @@ export function SwitchRow({ label, hint, value, onChange }: SwitchRowProps): Rea
 interface TokenIdentitySectionProps {
   name: string;
   onNameChange: (name: string) => void;
+  /** Vault resource URL for the draft art, or empty for a blank disc. */
+  artUrl: string;
+  /** Opens the shared library art picker. */
+  onRequestArtPick: () => void;
   showNameplate: boolean;
   onShowNameplateChange: (show: boolean) => void;
   /** Hidden from the player view and initiative list. */
@@ -58,6 +63,8 @@ interface TokenIdentitySectionProps {
 export function TokenIdentitySection({
   name,
   onNameChange,
+  artUrl,
+  onRequestArtPick,
   showNameplate,
   onShowNameplateChange,
   isHidden,
@@ -67,6 +74,17 @@ export function TokenIdentitySection({
   const nameId = useId();
   return (
     <EditTokenSection title="Token">
+      <div className="atlas-edit-token__art-row">
+        <div
+          className={`atlas-edit-token__art-preview${artUrl ? '' : ' atlas-edit-token__art-preview--blank'}`}
+          aria-hidden="true"
+        >
+          {artUrl ? <img src={artUrl} alt="" /> : null}
+        </div>
+        <Button variant="outline" size="sm" onClick={onRequestArtPick}>
+          {t('editToken.changeArt')}
+        </Button>
+      </div>
       <div className="atlas-edit-token__field">
         <label className="atlas-edit-token__label" htmlFor={nameId}>{t('editToken.name')}</label>
         <input

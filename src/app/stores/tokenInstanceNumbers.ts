@@ -4,11 +4,13 @@ import type { TokenEntity } from '../types';
 export function computeNextInstanceNumber(
   tokens: Record<string, TokenEntity>,
   imagePath: string,
+  /** When renumbering a token that already holds this path, leave its old number out of the used set. */
+  excludeId?: string,
 ): number {
   const usedNumbers = new Set(
-    Object.values(tokens)
-      .filter((t) => t.imagePath === imagePath)
-      .map((t) => t.instanceNumber)
+    Object.entries(tokens)
+      .filter(([id, t]) => t.imagePath === imagePath && id !== excludeId)
+      .map(([, t]) => t.instanceNumber)
       .filter((n): n is number => n != null)
   );
   let num = 1;

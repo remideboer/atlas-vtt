@@ -40,7 +40,7 @@ export class TokenPickerModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
     
-    // Add our custom class
+    this.containerEl.addClass('token-picker-modal-layer');
     this.modalEl.addClass(...ATLAS_NATIVE_MODAL_CLASSES, 'token-picker-modal-wrapper');
     
     // Set modal title

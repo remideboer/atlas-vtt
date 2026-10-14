@@ -1,3 +1,11 @@
+@use '../../../../../styles/tokens' as *;
+
+// Obsidian's modal container must sit above Atlas React overlays ($z-atlas-modal),
+// e.g. Edit Token → Change art.
+.modal-container.token-picker-modal-layer {
+  z-index: $z-atlas-modal + 1;
+}
+
 .token-picker-modal-wrapper {
   width: 90vw;
   max-width: 800px;

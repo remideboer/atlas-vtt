@@ -27,10 +27,15 @@ import { unitScaleOf } from '../../lighting/lightingUnits';
 import { maxLightRange } from '../../lighting/lightRanges';
 import { lightForm, lightFromForm, visionForm, visionFromForm, type LightForm, type VisionForm } from '../../lighting/tokenLighting';
 import { numberText } from '../../utils/numberInput';
+import { resourceUrl } from '../../packages/components/asset-manager/utils/assetFormatters';
+import { openTokenLibraryPicker } from '../../packages/components/token-picker/openTokenLibraryPicker';
 import { t } from '../../i18n';
 
 interface EditTokenValues {
   name: string;
+  imagePath: string;
+  size?: number | undefined;
+  showRing?: boolean | undefined;
   showNameplate: boolean;
   isHidden: boolean;
   /** Maximum per resource key; undefined follows the statblock, or removes a resource the statblock lacks. */
@@ -40,6 +45,7 @@ interface EditTokenValues {
 }
 
 interface EditTokenModalProps {
+  app: App;
   initial: EditTokenValues;
   /** The resources of the map's collection, in the order they show. */
   definitions: readonly ResourceDefinition[];
@@ -59,9 +65,12 @@ interface EditTokenModalProps {
  * vision) and the light it carries on the right, so the fields are read and tabbed through
  * column by column. A dialog too narrow for two columns stacks them in the same order.
  */
-function EditTokenModalInner({ initial, definitions, resourceDefaults, lighting, showLighting, statblock, onSave, onClose }: EditTokenModalProps): React.ReactElement {
+function EditTokenModalInner({ app, initial, definitions, resourceDefaults, lighting, showLighting, statblock, onSave, onClose }: EditTokenModalProps): React.ReactElement {
   const inherited = useStatblockSenses(statblock);
   const [name, setName] = useState(initial.name);
+  const [imagePath, setImagePath] = useState(initial.imagePath);
+  const [size, setSize] = useState(initial.size);
+  const [showRing, setShowRing] = useState(initial.showRing);
   const [showNameplate, setShowNameplate] = useState(initial.showNameplate);
   const [isHidden, setIsHidden] = useState(initial.isHidden);
   const [maxInputs, setMaxInputs] = useState<Record<string, string>>(
@@ -71,6 +80,7 @@ function EditTokenModalInner({ initial, definitions, resourceDefaults, lighting,
   const [light, setLight] = useState(initial.light);
   const inputRef = useRef<HTMLInputElement>(null);
   const context = { ...lighting, inherited };
+  const artUrl = resourceUrl(app, imagePath || undefined);
 
   useEffect(() => {
     window.setTimeout(() => {
@@ -82,11 +92,33 @@ function EditTokenModalInner({ initial, definitions, resourceDefaults, lighting,
   const handleSave = (): void => {
     onSave({
       name,
+      imagePath,
+      size,
+      showRing,
       showNameplate,
       isHidden,
       maxima: Object.fromEntries(definitions.map(({ key }) => [key, parseNumberInput(maxInputs[key] ?? '')])),
       vision,
       light,
+    });
+  };
+
+  const handleRequestArtPick = (): void => {
+    openTokenLibraryPicker(app, {
+      title: t('picker.editArt.title'),
+      selectLabel: t('picker.editArt.select'),
+      blankLabel: t('picker.editArt.blank'),
+      failedMessage: t('picker.editArt.failed'),
+      onPick: (pick) => {
+        if (pick === 'blank') {
+          setImagePath('');
+          return;
+        }
+        setImagePath(pick.imagePath);
+        setName(pick.name);
+        if (pick.size !== undefined) setSize(pick.size);
+        if (pick.showRing !== undefined) setShowRing(pick.showRing);
+      },
     });
   };
 
@@ -120,6 +152,8 @@ function EditTokenModalInner({ initial, definitions, resourceDefaults, lighting,
             <TokenIdentitySection
               name={name}
               onNameChange={setName}
+              artUrl={artUrl}
+              onRequestArtPick={handleRequestArtPick}
               showNameplate={showNameplate}
               onShowNameplateChange={setShowNameplate}
               isHidden={isHidden}
@@ -204,6 +238,9 @@ export function openEditTokenModal(
 
   const initial: EditTokenValues = {
     name: character?.name ?? '',
+    imagePath: token.imagePath ?? '',
+    size: token.size,
+    showRing: token.showRing,
     showNameplate: token.showNameplate ?? false,
     isHidden: token.isHidden ?? false,
     maxima: Object.fromEntries(definitions.map(({ key }) => [key, character?.resources?.[key]?.max])),
@@ -222,6 +259,9 @@ export function openEditTokenModal(
     const maxima = definitions.filter(({ key }) => values.maxima[key] !== initial.maxima[key]);
     const updates: TokenUpdates = {
       ...(changed('name') && { name: values.name }),
+      ...(changed('imagePath') && { imagePath: values.imagePath }),
+      ...(changed('size') && { size: values.size }),
+      ...(changed('showRing') && { showRing: values.showRing }),
       ...(changed('showNameplate') && { showNameplate: values.showNameplate }),
       ...(changed('isHidden') && { isHidden: values.isHidden }),
       ...(changed('vision') && { vision: visionFromForm(values.vision) }),
@@ -240,6 +280,7 @@ export function openEditTokenModal(
   root.render(
     <TooltipProvider delayDuration={300}>
       <EditTokenModalInner
+        app={app}
         initial={initial}
         lighting={lighting}
         showLighting={dynamicLightingOn(app)}

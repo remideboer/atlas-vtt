@@ -337,12 +337,20 @@ export type ViewAtlasStore = Mutate<
   rehydrateFromFile: (isSuperseded?: () => boolean) => Promise<void>;
 };
 
-function applyTokenUpdates(token: TokenEntity | undefined, updates: TokenUpdates): void {
+function applyTokenUpdates(
+  token: TokenEntity | undefined,
+  updates: TokenUpdates,
+  tokens?: Record<string, TokenEntity>,
+): void {
   if (!token) return;
-  const normalized = updates.imagePath
-    ? { ...updates, imagePath: normalizeImagePath(updates.imagePath) }
+  const artChanged = Object.prototype.hasOwnProperty.call(updates, 'imagePath');
+  const normalized = artChanged
+    ? { ...updates, imagePath: normalizeImagePath(updates.imagePath ?? '') }
     : updates;
   Object.assign(token, normalized);
+  if (artChanged && tokens) {
+    token.instanceNumber = computeNextInstanceNumber(tokens, token.imagePath, token.id);
+  }
 }
 
 /**
@@ -634,12 +642,12 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           }),
 
           updateToken: (id, updates) => set((draft) => {
-            applyTokenUpdates(draft.objects.tokens[id], updates);
+            applyTokenUpdates(draft.objects.tokens[id], updates, draft.objects.tokens);
           }),
 
           updateTokens: (entries) => set((draft) => {
             for (const { id, changes } of entries) {
-              applyTokenUpdates(draft.objects.tokens[id], changes);
+              applyTokenUpdates(draft.objects.tokens[id], changes, draft.objects.tokens);
             }
           }),
 

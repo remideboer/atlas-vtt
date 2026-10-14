@@ -6,6 +6,7 @@ export const editToken = {
   'editToken.title': 'Edit Token',
   'editToken.name': 'Name',
   'editToken.namePlaceholder': 'Token name',
+  'editToken.changeArt': 'Change art…',
   'editToken.showNameplate': 'Show nameplate',
   'editToken.hiddenFromPlayers': 'Hidden from players',
   'editToken.hiddenFromPlayersHint': 'Players do not see this token on the map or in initiative',
