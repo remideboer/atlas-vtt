@@ -68,7 +68,9 @@ token-ui-examples/
 party/
 .claude/
 .serena/
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .mcp.json
 .playwright-mcp/
 

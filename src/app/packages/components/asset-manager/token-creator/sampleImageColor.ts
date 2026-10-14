@@ -38,7 +38,7 @@ export function sampleImageColor(
         resolve(null);
         return;
       }
-      const canvas = document.createElement('canvas');
+      const canvas = createEl('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');

@@ -1,0 +1,32 @@
+---
+description: Atlas ESLint / Obsidian conventions for generated code
+alwaysApply: true
+---
+
+# ESLint and Obsidian lint conventions
+
+CI runs `npm run lint` with `--max-warnings 0`. Generated and edited code must satisfy these rules. Do not add inline `eslint-disable`; accepted exceptions go only in `eslint.suppressions.json`.
+
+## DOM
+
+- Prefer Obsidian helpers: `createEl` / `.createEl` over `document.createElement` (including `canvas`).
+- Never set a native `title` attribute (browser tooltip). Use `aria-label` and/or `LabelTooltip`.
+
+## Parsing and vision
+
+- Parse note / base / bundle YAML only via `parseNoteYaml` — never import `parseYaml` from Obsidian or the `yaml` package.
+- In `vision/` and `pixi/lighting/`, do not read `vision.enabled` or import/use `visionOn` except in the allowed askers (`sightSources` / `selectSight` and `tokenSightPolicy`).
+
+## Shared helpers
+
+- Shared helper modules must not import plugin or host APIs (`obsidian`, Electron, CodeMirror, Node builtins, plugin-only paths). See `scripts/boundaries.mjs`.
+
+## TypeScript and i18n
+
+- Annotate function return types explicitly.
+- UI copy goes through `t(...)`. English under `locales/en/` is the source of truth; keep `locales/ru/` in sync when adding keys.
+
+## Before finishing
+
+- After substantive edits under linted paths, run `npm run lint` and fix warnings before considering the work done.
+- `lint:scan` scorecard findings are not the CI gate; do not churn the whole repo for them unless asked.
