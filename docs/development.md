@@ -1,5 +1,9 @@
 # Development and pull requests
 
+For a structural overview of the plugin (C4 and UML diagrams, domain extension
+map), see [architecture/](architecture/README.md). Coding invariants stay in
+[`CLAUDE.md`](../CLAUDE.md).
+
 Atlas has two long-lived branches:
 
 | Branch | Channel | Version format | Who gets it |
