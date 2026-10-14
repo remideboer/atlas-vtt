@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ProcessedImage } from '../../../../imageProcessing/imageProcessing';
-import { convertForPreview } from './tokenImages';
+import { colorKeyOf, convertForPreview } from './tokenImages';
 import type { CreatorMode, EditTokenInput, PreviewImage, TokenPreview, TokenPreviewPatch } from './types';
 import { t } from '../../../../i18n';
 import { cropReset } from './cropMath';
@@ -28,7 +28,10 @@ export interface TokenPreviewsApi {
   toggleSelected: (id: string) => void;
   update: (id: string, patch: TokenPreviewPatch) => void;
   updateSelected: (patch: TokenPreviewPatch) => void;
-  /** The background conversion of this preview once it settles, if it produced `kind`. */
+  /**
+   * The background conversion of this preview once it settles, if it produced `kind`
+   * with the same transparency colour the preview still has.
+   */
   waitForOptimized: (id: string, kind: PreviewConversionKind) => Promise<ProcessedImage | undefined>;
   /** How far the conversion of the images added last is, or null when none runs. */
   optimization: ProgressCount | null;
@@ -77,8 +80,14 @@ function previewFromEdit(token: EditTokenInput): TokenPreview {
 interface PendingOptimization {
   result: Promise<ProcessedImage | undefined>;
   kind: PreviewConversionKind;
+  /** `#rrggbb` keyed when this conversion started; undefined when none. */
+  transparentColor: string | undefined;
   controller: AbortController;
   settled: boolean;
+}
+
+function sameTransparentColor(a: string | undefined, b: string | undefined): boolean {
+  return (a?.toLowerCase() ?? '') === (b?.toLowerCase() ?? '');
 }
 
 /**
@@ -168,7 +177,7 @@ export function useTokenPreviews(mode: CreatorMode): TokenPreviewsApi {
     const { file } = preview;
     if (!file) return undefined;
     try {
-      const result = await convertForPreview(file, mode, framed, signal);
+      const result = await convertForPreview(file, mode, framed, signal, colorKeyOf(preview.transparentColor));
       if (!signal.aborted && liveIds.current.has(preview.id)) {
         queuePatch(preview.id, {
           compressionRatio: Math.round((1 - result.image.size / file.size) * 100),
@@ -187,6 +196,27 @@ export function useTokenPreviews(mode: CreatorMode): TokenPreviewsApi {
     }
   }, [mode, queuePatch]);
 
+  const startOptimization = useCallback((preview: TokenPreview): void => {
+    if (!preview.file) return;
+    cancelOptimization(preview.id);
+    const controller = new AbortController();
+    const framed = preview.showRing !== false;
+    const pending: PendingOptimization = {
+      controller,
+      settled: false,
+      transparentColor: preview.transparentColor,
+      kind: mode === 'token' && framed ? 'default-crop' : 'whole',
+      result: optimizeOne(preview, framed, controller.signal),
+    };
+    void pending.result.finally(() => {
+      pending.settled = true;
+      if (controller.signal.aborted) return;
+      queuedFinishes.current += 1;
+      scheduleFlush();
+    });
+    pendingRef.current.set(preview.id, pending);
+  }, [mode, optimizeOne, cancelOptimization, scheduleFlush]);
+
   const addImages = useCallback((images: PreviewImage[]): void => {
     const paths = new Set(previewsRef.current.flatMap(p => p.statblockPath ? [p.statblockPath] : []));
     const fresh = images.filter(image => {
@@ -197,22 +227,8 @@ export function useTokenPreviews(mode: CreatorMode): TokenPreviewsApi {
     if (fresh.length === 0) return;
     changePreviews((prev) => [...prev, ...fresh]);
     startOptimizations(fresh.length);
-    for (const preview of fresh) {
-      const controller = new AbortController();
-      const framed = preview.showRing !== false;
-      const pending: PendingOptimization = {
-        controller, settled: false, kind: mode === 'token' && framed ? 'default-crop' : 'whole',
-        result: optimizeOne(preview, framed, controller.signal),
-      };
-      void pending.result.finally(() => {
-        pending.settled = true;
-        if (controller.signal.aborted) return;
-        queuedFinishes.current += 1;
-        scheduleFlush();
-      });
-      pendingRef.current.set(preview.id, pending);
-    }
-  }, [mode, optimizeOne, defaultRing, changePreviews, startOptimizations, scheduleFlush]);
+    for (const preview of fresh) startOptimization(preview);
+  }, [startOptimization, defaultRing, changePreviews, startOptimizations]);
 
   const reset = useCallback((editToken?: EditTokenInput | null): void => {
     previewsRef.current.forEach((p) => revokeIfBlob(p.previewUrl));
@@ -244,13 +260,41 @@ export function useTokenPreviews(mode: CreatorMode): TokenPreviewsApi {
     changePreviews((prev) => prev.map((p) => (p.id === id ? { ...p, isSelected: !p.isSelected } : p)));
   }, [changePreviews]);
 
+  const reoptimizeIfColorKeyChanged = useCallback((before: TokenPreview, after: TokenPreview): void => {
+    if (mode !== 'token' || !after.file) return;
+    if (sameTransparentColor(before.transparentColor, after.transparentColor)) return;
+    changePreviews((prev) => prev.map((p) => (p.id === after.id ? { ...p, isOptimizing: true } : p)));
+    startOptimizations(1);
+    startOptimization(after);
+  }, [mode, changePreviews, startOptimizations, startOptimization]);
+
+  const update = useCallback((id: string, patch: TokenPreviewPatch): void => {
+    const before = previewsRef.current.find((p) => p.id === id);
+    if (!before) return;
+    const after = { ...before, ...patch };
+    patchPreview(id, patch);
+    reoptimizeIfColorKeyChanged(before, after);
+  }, [patchPreview, reoptimizeIfColorKeyChanged]);
+
   const updateSelected = useCallback((patch: TokenPreviewPatch): void => {
+    const selected = previewsRef.current.filter((p) => p.isSelected);
     changePreviews((prev) => prev.map((p) => (p.isSelected ? { ...p, ...patch } : p)));
-  }, [changePreviews]);
+    if (!('transparentColor' in patch)) return;
+    const toReoptimize = selected.filter((p) => p.file && !sameTransparentColor(p.transparentColor, patch.transparentColor));
+    if (toReoptimize.length === 0) return;
+    changePreviews((prev) => prev.map((p) => (toReoptimize.some((r) => r.id === p.id) ? { ...p, isOptimizing: true } : p)));
+    startOptimizations(toReoptimize.length);
+    for (const preview of toReoptimize) {
+      startOptimization({ ...preview, ...patch, isOptimizing: true });
+    }
+  }, [changePreviews, startOptimizations, startOptimization]);
 
   const waitForOptimized = useCallback(async (id: string, kind: PreviewConversionKind): Promise<ProcessedImage | undefined> => {
     const pending = pendingRef.current.get(id);
-    return pending?.kind === kind ? pending.result : undefined;
+    const preview = previewsRef.current.find((p) => p.id === id);
+    if (!pending || pending.kind !== kind || !preview) return undefined;
+    if (!sameTransparentColor(pending.transparentColor, preview.transparentColor)) return undefined;
+    return pending.result;
   }, []);
 
   const selectedIds = useMemo(() => previews.filter((p) => p.isSelected).map((p) => p.id), [previews]);
@@ -273,7 +317,7 @@ export function useTokenPreviews(mode: CreatorMode): TokenPreviewsApi {
     selectAll: () => setAllSelected(true),
     deselectAll: () => setAllSelected(false),
     toggleSelected,
-    update: patchPreview,
+    update,
     updateSelected,
     waitForOptimized,
     optimization,

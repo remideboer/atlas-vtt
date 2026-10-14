@@ -1,5 +1,7 @@
 import { TokenRingToggle } from './TokenRingToggle';
 import { TokenSizeSelect } from './TokenSizeSelect';
+import { TransparencyColorControl } from './TransparencyColorControl';
+import { sampleImageColor } from './sampleImageColor';
 import tokenRingImageUrl from '../../../../assets/token-ring.webp';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Check, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
@@ -98,6 +100,7 @@ export const TokenPreviewCard = React.memo(function TokenPreviewCard({ preview, 
   const [entrance] = useState(enterIndex);
   const nameLabelId = useId();
   const [artElement, setArtElement] = useState<HTMLDivElement | null>(null);
+  const [pickingColor, setPickingColor] = useState(false);
   const previewRef = useRef(preview);
   previewRef.current = preview;
   const onChangeRef = useRef(onChange);
@@ -138,6 +141,19 @@ export const TokenPreviewCard = React.memo(function TokenPreviewCard({ preview, 
     if (e.button !== 0) return;
     e.stopPropagation();
     const target = e.currentTarget;
+    if (pickingColor) {
+      e.preventDefault();
+      const well = target.getBoundingClientRect();
+      const current = previewRef.current;
+      void sampleImageColor(current.previewUrl, well, e.clientX, e.clientY, {
+        ...(isCropEditable ? { crop: { scale: current.imageScale, position: current.imagePosition, aspect } } : {}),
+      }).then((hex) => {
+        if (hex) onChangeRef.current({ transparentColor: hex });
+        setPickingColor(false);
+      });
+      return;
+    }
+    if (!isCropEditable) return;
     const startPosition = preview.imagePosition;
     const size = target.getBoundingClientRect().width || 1;
     target.setPointerCapture(e.pointerId);
@@ -174,13 +190,13 @@ export const TokenPreviewCard = React.memo(function TokenPreviewCard({ preview, 
   const art = (
     <div
       ref={setArtElement}
-      className="atlas-token-card__art"
-      onDoubleClick={isCropEditable ? resetCrop : undefined}
+      className={cn('atlas-token-card__art', pickingColor && 'atlas-token-card__art--picking')}
+      onDoubleClick={isCropEditable && !pickingColor ? resetCrop : undefined}
     >
       <div
         className="atlas-token-card__image"
         style={imageStyle}
-        onPointerDown={isCropEditable ? handlePointerDown : undefined}
+        onPointerDown={isCropEditable || pickingColor ? handlePointerDown : undefined}
       />
       {/* The card never shows the upload itself: its place is held until the converted image is there. */}
       {preview.isOptimizing && <Skeleton className="atlas-token-card__pending" live />}
@@ -234,6 +250,13 @@ export const TokenPreviewCard = React.memo(function TokenPreviewCard({ preview, 
       {mode === 'token' && <>
         <TokenRingToggle label={t('creator.toggleRingFor', { name: preview.name })} value={preview.showRing !== false} onChange={showRing => onChange({ showRing })} />
         <TokenSizeSelect className="atlas-setting-dropdown" value={preview.size} onChange={size => onChange({ size })} />
+        <TransparencyColorControl
+          value={preview.transparentColor}
+          onChange={(transparentColor) => onChange({ transparentColor })}
+          picking={pickingColor}
+          onPickingChange={setPickingColor}
+          disabled={!preview.file || preview.isOptimizing}
+        />
       </>}
       {isCropEditable && (
         <div className="atlas-token-card__zoom">

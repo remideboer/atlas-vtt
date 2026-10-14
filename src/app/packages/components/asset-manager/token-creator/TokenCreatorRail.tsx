@@ -1,5 +1,6 @@
 import { TokenRingToggle } from './TokenRingToggle';
 import { TokenSizeSelect } from './TokenSizeSelect';
+import { TransparencyColorControl } from './TransparencyColorControl';
 import React, { useId, useState } from 'react';
 import { Check, Minus, MoveHorizontal, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '../../primitives/button';
@@ -15,6 +16,12 @@ import type { CollectionMetadata } from '../../../../services/AssetService';
 import type { CreatorMode } from './types';
 import type { TokenPreviewsApi } from './useTokenPreviews';
 import { t } from '../../../../i18n';
+
+function sharedTransparentColor(list: TokenPreview[]): string | undefined {
+  const selected = list.filter((preview) => preview.isSelected);
+  const first = selected[0]?.transparentColor;
+  return selected.length > 0 && selected.every((preview) => preview.transparentColor === first) ? first : undefined;
+}
 
 interface TokenCreatorRailProps {
   mode: CreatorMode;
@@ -167,6 +174,11 @@ export function TokenCreatorRail(props: TokenCreatorRailProps): React.JSX.Elemen
           </Button>
           <div className="atlas-token-creator__label-row"><span>{t('creator.size')}</span></div>
           <TokenSizeSelect className="atlas-setting-dropdown" value={batchSize} onChange={applyBatchSize} />
+          <TransparencyColorControl
+            value={sharedTransparentColor(previews.previews)}
+            onChange={(transparentColor) => previews.updateSelected({ transparentColor })}
+            disabled={selectedCount === 0}
+          />
         </section>
       )}
       </>}

@@ -310,3 +310,76 @@
   text-align: center;
   overflow-wrap: anywhere;
 }
+
+.atlas-token-card__art--picking {
+  cursor: crosshair;
+
+  .atlas-token-card__image {
+    cursor: crosshair;
+  }
+}
+
+.atlas-token-transparency {
+  @include atlas-flex-col($gap: $spacing-xs);
+}
+
+.atlas-token-transparency__label {
+  font-size: $font-ui-smaller;
+  color: var(--text-muted);
+}
+
+.atlas-token-transparency__row {
+  @include atlas-flex-row($gap: $spacing-xs);
+  align-items: center;
+}
+
+.atlas-token-transparency__swatch {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: $radius-l;
+  @include atlas-elevated-surface;
+  background: var(--background-modifier-form-field);
+  overflow: hidden;
+
+  &--active {
+    box-shadow: inset 0 0 0 1px var(--interactive-accent);
+  }
+
+  input[type='color'] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+  }
+}
+
+.atlas-token-transparency__empty {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: $icon-xs;
+  height: $icon-xs;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+.atlas-token-transparency__btn {
+  &.btn,
+  &.btn--icon {
+    width: 28px;
+    height: 28px;
+    border-radius: $radius-l;
+    flex-shrink: 0;
+  }
+
+  svg {
+    width: $icon-xs;
+    height: $icon-xs;
+  }
+}

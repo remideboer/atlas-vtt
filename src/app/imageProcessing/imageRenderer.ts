@@ -1,4 +1,5 @@
 import type { ImageJob, ImageJobResult, ImageLayout, ThumbnailSpec } from './imageJob';
+import { applyColorKey } from './colorKey';
 import { WEBP_MAX_SIDE } from './decodeLimits';
 import { fitSize, frameImageRect, frameSize, scaleDown, type Size } from './imageLayout';
 import { imageHeader, type ImageFormat } from './imageDimensions';
@@ -103,13 +104,13 @@ function renderFit(source: Drawable, size: Size): OffscreenCanvas {
   return canvas;
 }
 
-function renderFrame(bitmap: ImageBitmap, layout: Extract<ImageLayout, { kind: 'frame' }>): OffscreenCanvas {
-  const frame = frameSize(bitmap, layout.placement, layout.minSize, layout.maxSize);
-  const rect = frameImageRect(bitmap, layout.placement, frame);
+function renderFrame(source: Drawable, layout: Extract<ImageLayout, { kind: 'frame' }>): OffscreenCanvas {
+  const frame = frameSize(source, layout.placement, layout.minSize, layout.maxSize);
+  const rect = frameImageRect(source, layout.placement, frame);
   const canvas = new OffscreenCanvas(frame, frame);
-  const scaled = reduced(bitmap, rect);
+  const scaled = reduced(source, rect);
   context(canvas).drawImage(scaled, rect.left, rect.top, rect.width, rect.height);
-  freeIntermediate(scaled, bitmap);
+  freeIntermediate(scaled, source);
   return canvas;
 }
 
@@ -140,6 +141,7 @@ async function renderCopies(output: Drawable, job: ImageJob): Promise<Pick<Image
  * and so is everything but a WebP where the job's result must be one.
  */
 async function keepsSource(job: ImageJob, source: Blob, bitmap: ImageBitmap): Promise<boolean> {
+  if (job.colorKey) return false;
   const { layout } = job;
   if (layout.kind !== 'fit') return false;
   const fitted = fitSize(bitmap, layout);
@@ -149,38 +151,70 @@ async function keepsSource(job: ImageJob, source: Blob, bitmap: ImageBitmap): Pr
 }
 
 /**
+ * Pixels near the key colour become transparent. Returns a bitmap made from the
+ * keyed pixels. Drawing a canvas that was only written with `putImageData` drops
+ * the picture in Chromium's GPU raster (the encode then comes out fully clear).
+ * Closes `bitmap`.
+ */
+async function withColorKey(bitmap: ImageBitmap, key: NonNullable<ImageJob['colorKey']>): Promise<ImageBitmap> {
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new Error('Could not create a drawing surface for the image.');
+  ctx.drawImage(bitmap, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  applyColorKey(imageData, key);
+  const keyed = await createImageBitmap(imageData);
+  bitmap.close();
+  return keyed;
+}
+
+/**
  * The natural size of the source as it is shown. Header sizes are stored
  * sizes, while decoders apply a JPEG's EXIF rotation: a bitmap decoded with
  * swapped sides is a turned image. The bitmap has the scaled size, or the
  * full one where `ImageDecoder` is missing and the JPEG was decoded whole.
  */
 function shownSource(bitmap: ImageBitmap, scaledDecode: ImageJob['scaledDecode']): Size {
-  if (!scaledDecode) return bitmap;
+  // A plain copy: colour key closes the bitmap before layout, and a closed bitmap reports 0×0.
+  if (!scaledDecode) return { width: bitmap.width, height: bitmap.height };
   const { source, decoded } = scaledDecode;
   const swaps = (size: Size): boolean => bitmap.width === size.height && bitmap.height === size.width;
   const turned = bitmap.width !== bitmap.height && (swaps(decoded) || swaps(source));
-  return turned ? { width: source.height, height: source.width } : source;
+  return turned
+    ? { width: source.height, height: source.width }
+    : { width: source.width, height: source.height };
 }
 
 /** A fit is sized from the natural source, so a JPEG decoded at a smaller scale comes out as a whole decode would. */
-function render(bitmap: ImageBitmap, source: Size, layout: ImageLayout): OffscreenCanvas {
-  return layout.kind === 'fit' ? renderFit(bitmap, fitSize(source, layout)) : renderFrame(bitmap, layout);
+function render(drawable: Drawable, source: Size, layout: ImageLayout): OffscreenCanvas {
+  return layout.kind === 'fit' ? renderFit(drawable, fitSize(source, layout)) : renderFrame(drawable, layout);
 }
 
 export async function renderImageJob(job: ImageJob): Promise<ImageJobResult> {
-  const bitmap = await decode(job);
+  let bitmap: ImageBitmap | null = await decode(job);
+  let keyed: ImageBitmap | null = null;
   try {
     const source = shownSource(bitmap, job.scaledDecode);
-    const sourcePreview = await renderCopy(bitmap, job.sourcePreview);
     if (job.source instanceof Blob && !job.scaledDecode && await keepsSource(job, job.source, bitmap)) {
-      return { image: job.source, sourcePreview, ...await renderCopies(bitmap, job) };
+      return { image: job.source, sourcePreview: await renderCopy(bitmap, job.sourcePreview), ...await renderCopies(bitmap, job) };
     }
-    const canvas = render(bitmap, source, job.layout);
+    if (job.colorKey) {
+      keyed = await withColorKey(bitmap, job.colorKey);
+      bitmap = null;
+    }
+    const drawable = keyed ?? bitmap;
+    if (!drawable) throw new Error('Could not decode the image.');
+    // Card crop editor and thumbnails use the keyed pixels so the preview matches the save.
+    const sourcePreview = await renderCopy(drawable, job.sourcePreview);
+    const canvas = render(drawable, source, job.layout);
     const scaledDown = scaleDown(job.layout, source, canvas);
     // The output no longer needs the decoded source; free it before the slow encode.
-    bitmap.close();
+    drawable.close();
+    bitmap = null;
+    keyed = null;
     return { image: await encode(canvas, job.quality), sourcePreview, ...await renderCopies(canvas, job), scaledDown };
   } finally {
-    bitmap.close();
+    bitmap?.close();
+    keyed?.close();
   }
 }

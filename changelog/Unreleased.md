@@ -12,9 +12,11 @@
 - Edit Token can change a placed token’s art from the library, including blank.
 - Choosing a ring colour turns the ring on for any placed token, including library art saved without a ring. None hides the ring.
 - Token size menus offer Tiny (½×½) and Small (same 1×1 footprint as Medium).
+- When creating a token, pick a transparency colour (or sample it from the image) to extend existing transparency into that colour, or to clear an opaque matching background from the image edge.
 
 ## Fixed
 
+- A transparency colour removes every pixel near the picked colour (a few shades either side), wherever it sits in the image.
 - Opening a recent scene shows that scene's map.
 - Send map at actual size maximizes the player window, where the window stayed at its previous size.
 - Measured distances show one decimal place, so a 1.5 m cell reads 1.5 m instead of 2 m.

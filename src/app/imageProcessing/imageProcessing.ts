@@ -44,6 +44,8 @@ export interface ProcessOptions {
   background?: boolean;
   /** The result is stored under a WebP name: a PNG or JPEG that fits is encoded too instead of kept. */
   webpOnly?: boolean;
+  /** Turn pixels near this colour (`0xRRGGBB`) transparent before layout. */
+  colorKey?: ImageJob['colorKey'];
 }
 
 /** Workers beyond this add little for batches of token art and cost memory. */
@@ -143,7 +145,14 @@ async function process(source: Blob, job: Omit<ImageJob, 'source'>, options: Pro
   if (header && !decodable(header)) throw new ImageTooLargeError(header);
   const scaledDecode = scaledDecodeOf(header, job.layout);
   const run: ImageJobOptions = { signal: options.signal, background: options.background ?? false, cost: jobCost(scaledDecode?.decoded ?? header) };
-  const withCopies = { ...job, thumbnail: options.thumbnail, preview: options.preview, sourcePreview: options.sourcePreview, webpOnly: options.webpOnly };
+  const withCopies = {
+    ...job,
+    thumbnail: options.thumbnail,
+    preview: options.preview,
+    sourcePreview: options.sourcePreview,
+    webpOnly: options.webpOnly,
+    colorKey: options.colorKey,
+  };
   // One pool for both attempts: after unload it refuses the fallback and frees its bitmap
   const workers = workerPool();
   try {

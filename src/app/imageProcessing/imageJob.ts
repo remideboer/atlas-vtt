@@ -60,6 +60,11 @@ export interface ImageJob {
    * scaling is encoded too instead of kept. A WebP source is still kept.
    */
   webpOnly?: boolean | undefined;
+  /**
+   * Turn pixels near `rgb` (`0xRRGGBB`) transparent before layout. A keyed job
+   * is always re-encoded; the source is never kept as-is.
+   */
+  colorKey?: { rgb: number; tolerance?: number } | undefined;
 }
 
 /** Pixel sizes of a source and of the smaller image a fit made of it. */

@@ -1,6 +1,6 @@
 import type { ProcessedImage } from '../../../../imageProcessing/imageProcessing';
 import { cropReset } from './cropMath';
-import { cropTokenImage, optimizeUpload } from './tokenImages';
+import { colorKeyOf, cropTokenImage, optimizeUpload } from './tokenImages';
 import type { CreatorMode, TokenPreview } from './types';
 import type { PreviewConversionKind } from './useTokenPreviews';
 
@@ -22,11 +22,13 @@ function isUntouchedCrop(preview: TokenPreview): boolean {
  * once; otherwise the image is converted now.
  */
 export async function prepareSaveImage(file: File, preview: TokenPreview, context: SaveImageContext, signal?: AbortSignal): Promise<ProcessedImage> {
+  const colorKey = colorKeyOf(preview.transparentColor);
   if (context.mode === 'token' && preview.showRing !== false) {
     const background = isUntouchedCrop(preview) ? await context.waitForOptimized(preview.id, 'default-crop') : undefined;
-    return background ?? cropTokenImage(file, preview.imageScale, preview.imagePosition, signal);
+    return background ?? cropTokenImage(file, preview.imageScale, preview.imagePosition, signal, false, colorKey);
   }
-  return (await context.waitForOptimized(preview.id, 'whole')) ?? optimizeUpload(file, context.mode, { signal, thumbnail: true });
+  return (await context.waitForOptimized(preview.id, 'whole'))
+    ?? optimizeUpload(file, context.mode, { signal, thumbnail: true, colorKey });
 }
 
 /**

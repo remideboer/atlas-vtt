@@ -37,6 +37,11 @@ export interface TokenPreview {
   paperWidthInches?: number | undefined;
   /** How tall this map is on paper, in inches. Saved on map assets. */
   paperHeightInches?: number | undefined;
+  /**
+   * `#rrggbb` keyed to transparent in the processed art; unset leaves the image as uploaded.
+   * Baked into the saved bytes, never stored on the asset.
+   */
+  transparentColor?: string | undefined;
   id: string;
   /** Original upload; null when editing an existing asset without replacing its image. */
   file: File | null;
@@ -52,7 +57,7 @@ export interface TokenPreview {
   isOptimizing: boolean;
 }
 
-export type TokenPreviewPatch = Partial<Pick<TokenPreview, 'name' | 'imageScale' | 'imagePosition' | 'showRing' | 'size' | 'tags' | 'paperWidthInches' | 'paperHeightInches'>>;
+export type TokenPreviewPatch = Partial<Pick<TokenPreview, 'name' | 'imageScale' | 'imagePosition' | 'showRing' | 'size' | 'tags' | 'paperWidthInches' | 'paperHeightInches' | 'transparentColor'>>;
 
 export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 3;

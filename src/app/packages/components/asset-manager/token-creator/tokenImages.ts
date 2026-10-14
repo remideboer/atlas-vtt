@@ -1,4 +1,5 @@
 import { IMAGE_PRESETS, optimizeImage, renderFramedImage, type ProcessedImage, type ThumbnailSpec } from '../../../../imageProcessing/imageProcessing';
+import { COLOR_KEY_TOLERANCE, parseColorKeyHex, type ColorKey } from '../../../../imageProcessing/colorKey';
 import { THUMBNAIL_SPEC } from '../../../../services/AssetThumbnailService';
 import { cropReset, tokenCropPlacement } from './cropMath';
 import type { CreatorMode, ImagePosition } from './types';
@@ -45,12 +46,25 @@ function shared(file: File, key: string, signal: AbortSignal | undefined, run: (
   });
 }
 
+/** Job option from a preview's `#rrggbb`, or undefined when unset / invalid. */
+export function colorKeyOf(hex: string | undefined): ColorKey | undefined {
+  if (!hex) return undefined;
+  const rgb = parseColorKeyHex(hex);
+  return rgb === null ? undefined : { rgb, tolerance: COLOR_KEY_TOLERANCE };
+}
+
+function colorKeyCachePart(colorKey: ColorKey | undefined): string {
+  return colorKey ? `key:${colorKey.rgb.toString(16)}` : 'key:none';
+}
+
 export interface UploadOptions {
   signal?: AbortSignal | undefined;
   /** Render the thumbnail too; only worth it when this result is what gets saved. */
   thumbnail: boolean;
   /** A conversion started ahead of time, which jobs someone waits for may overtake. */
   background?: boolean;
+  /** Colour keyed to transparent before layout. */
+  colorKey?: ColorKey | undefined;
 }
 
 /**
@@ -58,20 +72,30 @@ export interface UploadOptions {
  * card-sized copy: painting a full map in a preview card stalls the window.
  */
 export function optimizeUpload(file: File, mode: CreatorMode, options: UploadOptions): Promise<ProcessedImage> {
-  return shared(file, `fit:${mode}:${options.thumbnail}`, options.signal, (signal) => optimizeImage(file, IMAGE_PRESETS[mode], {
+  const colorKey = mode === 'token' ? options.colorKey : undefined;
+  return shared(file, `fit:${mode}:${options.thumbnail}:${colorKeyCachePart(colorKey)}`, options.signal, (signal) => optimizeImage(file, IMAGE_PRESETS[mode], {
     signal,
     thumbnail: options.thumbnail ? THUMBNAIL_SPEC : undefined,
     preview: mode === 'map' ? MAP_CARD_PREVIEW : undefined,
     background: options.background ?? false,
+    colorKey,
   }));
 }
 
 /** What the preview shows inside the token circle, taken from the full-resolution upload, with its thumbnail. */
-export function cropTokenImage(file: File, scale: number, position: ImagePosition, signal?: AbortSignal, background = false): Promise<ProcessedImage> {
+export function cropTokenImage(
+  file: File,
+  scale: number,
+  position: ImagePosition,
+  signal?: AbortSignal,
+  background = false,
+  colorKey?: ColorKey,
+): Promise<ProcessedImage> {
   const { maxWidth, quality } = IMAGE_PRESETS.token;
-  return shared(file, `crop:${scale}:${position.x}:${position.y}:${background}`, signal, (shareSignal) =>
+  return shared(file, `crop:${scale}:${position.x}:${position.y}:${background}:${colorKeyCachePart(colorKey)}`, signal, (shareSignal) =>
     renderFramedImage(file, tokenCropPlacement(scale, position), {
       minSize: MIN_TOKEN_SIZE, maxSize: maxWidth, quality, thumbnail: THUMBNAIL_SPEC, signal: shareSignal, background,
+      colorKey,
       ...(background && { sourcePreview: TOKEN_CARD_PREVIEW }),
     }));
 }
@@ -82,17 +106,23 @@ export function cropTokenImage(file: File, scale: number, position: ImagePositio
  * card, or the whole image of a map or unframed token. One decode serves both
  * the card and the save.
  */
-export function convertForPreview(file: File, mode: CreatorMode, framed: boolean, signal?: AbortSignal): Promise<ProcessedImage> {
+export function convertForPreview(
+  file: File,
+  mode: CreatorMode,
+  framed: boolean,
+  signal?: AbortSignal,
+  colorKey?: ColorKey,
+): Promise<ProcessedImage> {
   if (mode === 'token' && framed) {
     const { imageScale, imagePosition } = cropReset({ file });
-    return cropTokenImage(file, imageScale, imagePosition, signal, true);
+    return cropTokenImage(file, imageScale, imagePosition, signal, true, colorKey);
   }
-  return optimizeUpload(file, mode, { signal, thumbnail: true, background: true });
+  return optimizeUpload(file, mode, { signal, thumbnail: true, background: true, colorKey });
 }
 
 /** Token art as the creator saves it by default: cropped to the circle when framed, whole otherwise. */
-export function convertTokenArt(file: File, framed: boolean, signal?: AbortSignal): Promise<ProcessedImage> {
+export function convertTokenArt(file: File, framed: boolean, signal?: AbortSignal, colorKey?: ColorKey): Promise<ProcessedImage> {
   return framed
-    ? cropTokenImage(file, 1, { x: 0, y: 0 }, signal)
-    : optimizeUpload(file, 'token', { signal, thumbnail: true });
+    ? cropTokenImage(file, 1, { x: 0, y: 0 }, signal, false, colorKey)
+    : optimizeUpload(file, 'token', { signal, thumbnail: true, colorKey });
 }
