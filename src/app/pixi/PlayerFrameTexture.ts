@@ -36,7 +36,7 @@ export function framePieces(frame: Size, canvas: Size): number {
  * The lighting composite reads the scene beneath it by copy in a texture (as in a thumbnail), so
  * the frame does not go through the canvas' back buffer; the pieces are drawn past it too.
  *
- * Off-map margins clear to the map's edge colour (`setClearColor`), not the GM canvas black.
+ * Off-map margins clear to the map's edge colour (`setClearColor`), same as the GM canvas.
  */
 export class PlayerFrameTexture {
   private texture: RenderTexture | null = null;

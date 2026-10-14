@@ -94,7 +94,7 @@ export class PixiRendererOrchestrator { // Renamed class
   private lightingFeature?: LightingFeature;
   /** The players' frame, rendered at the player window's size; made when this view is first presented. */
   private playerFrames?: Pick<PlayerFrameTexture, 'canRender' | 'render' | 'copy' | 'release' | 'destroy' | 'setClearColor'>;
-  /** Off-map clear colour for the players' picture; the GM canvas stays black. */
+  /** Off-map clear colour for the GM canvas and the players' picture (sampled from the map edge). */
   private playerOffMapColor = DEFAULT_OFF_MAP_COLOR;
   /** Drops edge samples that finished after another map or stretch settled. */
   private edgeColorGeneration = 0;
@@ -353,8 +353,8 @@ export class PixiRendererOrchestrator { // Renamed class
   }
   
   private setupRenderersAndManagers(viewport: Viewport): void {
-    // The map sprite draws the background; the canvas around it stays black
-    this.pixiAppManager.app.renderer.background.color = 0x000000;
+    // Area outside the map; refreshed from the map edge once the image settles
+    this.pixiAppManager.app.renderer.background.color = this.playerOffMapColor;
     requestRender(this.pixiAppManager.app);
     
     // Initialize TokenRenderer first if GridSystem is ready
@@ -656,7 +656,7 @@ export class PixiRendererOrchestrator { // Renamed class
     this.eventBus.emit('map-image-updated', this.getMapRect() ?? undefined);
   }
 
-  /** Samples the map's edge for the players' off-map margins; ignored when a later map settles first. */
+  /** Samples the map's edge for off-map margins; ignored when a later map settles first. */
   private refreshPlayerEdgeColor(): void {
     const map = this.mapImage;
     const generation = ++this.edgeColorGeneration;
@@ -674,10 +674,15 @@ export class PixiRendererOrchestrator { // Renamed class
     if (this.playerOffMapColor === color) return;
     this.playerOffMapColor = color;
     this.playerFrames?.setClearColor(color);
+    const app = this.pixiAppManager.app;
+    if (app) {
+      app.renderer.background.color = color;
+      requestRender(app);
+    }
     this.eventBus.emit('player-off-map-color', offMapColorHex(color));
   }
 
-  /** Colour of the area outside the map in the players' picture (`#rrggbb`). */
+  /** Colour of the area outside the map (`#rrggbb`). */
   public playerOffMapColorHex(): string {
     return offMapColorHex(this.playerOffMapColor);
   }
