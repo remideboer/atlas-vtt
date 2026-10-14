@@ -5,7 +5,8 @@ import { t } from '../../i18n';
  * A size-1 token fills one cell minus a stroke inset on each side. On hex grids
  * the cell size is the flat-to-flat distance, so the same formula fits the
  * hex's inscribed circle. Larger tokens span (2n - 1) cells so they stay
- * centered on a cell.
+ * centered on a cell. Below 1 (Tiny 0.5) the stored size is the diameter in
+ * cells, so a half-cell token covers a quarter of a square.
  */
 
 const REFERENCE_CELL_SIZE = 70;
@@ -18,18 +19,21 @@ export function computeTokenStrokeWidth(gridSize: number): number {
 
 /** Diameter in cells covered by a token of the given size multiplier. */
 export function tokenDiameterInCells(sizeInCells: number): number {
+  if (sizeInCells < 1) return sizeInCells;
   return 2 * sizeInCells - 1;
 }
 
 /** Named footprints offered in menus, stored as the multiplier `tokenDiameterInCells` expects. */
 export const TOKEN_SIZE_OPTIONS: ReadonlyArray<{ label: string; size: number }> = [
+  { label: t('token.size.tiny'), size: 0.5 },
+  { label: t('token.size.small'), size: 1 },
   { label: t('token.size.medium'), size: 1 },
   { label: t('token.size.large'), size: 1.5 },
   { label: t('token.size.huge'), size: 2 },
   { label: t('token.size.gargantuan'), size: 2.5 },
 ];
 
-const CREATURE_SIZE_MULTIPLIERS: Record<string, number> = { tiny: 1, small: 1, medium: 1, large: 1.5, huge: 2, gargantuan: 2.5 };
+const CREATURE_SIZE_MULTIPLIERS: Record<string, number> = { tiny: 0.5, small: 1, medium: 1, large: 1.5, huge: 2, gargantuan: 2.5 };
 
 /** Size multiplier for a creature size word from statblock data ("Large", "Huge or larger"); undefined when unknown. */
 export function tokenSizeFromCreatureSize(value: unknown): number | undefined {

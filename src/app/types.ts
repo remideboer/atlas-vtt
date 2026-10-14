@@ -57,7 +57,7 @@ export interface BaseToken {
   showNameplate?: boolean;
   /** Rotation in degrees (0-360) */
   rotation?: number;
-  /** Token size in logical cells (default 1: 1=1x1, 1.5=2x2, 2=3x3, 2.5=4x4, 3=5x5, etc.) */
+  /** Token size multiplier (default 1: 0.5=Tiny ½×½, 1=1×1, 1.5=2×2, 2=3×3, 2.5=4×4, 3=5×5, etc.) */
   size?: number;
   /** Layer for z-ordering (higher values appear on top) */
   layer?: number;

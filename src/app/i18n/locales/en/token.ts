@@ -3,6 +3,8 @@ import type { Message } from '../../types';
 export const token = {
   'token.unknownCreature': 'Unknown Creature',
   'token.clickToName': 'Click to name',
+  'token.size.tiny': 'Tiny (½×½)',
+  'token.size.small': 'Small (1×1)',
   'token.size.medium': 'Medium (1×1)',
   'token.size.large': 'Large (2×2)',
   'token.size.huge': 'Huge (3×3)',

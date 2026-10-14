@@ -374,8 +374,8 @@ export class TokenResizeUI {
       // Half sizes: 1.5 = 2x2, 2.5 = 4x4, 3.5 = 6x6, etc.
       let newSize = initialSize + snappedChange;
       
-      // Clamp size between 1 (1x1 grid) and 5 (9x9 grid)
-      newSize = Math.max(1, Math.min(5, newSize));
+      // Clamp size between 0.5 (Tiny, half-cell) and 5 (9x9 grid)
+      newSize = Math.max(0.5, Math.min(5, newSize));
       
       const token = this.store.getState().objects.tokens[tokenId];
       const lastTempSize = this.temporarySizes[tokenId];
