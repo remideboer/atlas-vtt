@@ -104,6 +104,8 @@ export class PlayerWindowService {
   private stopDisplayWatch: (() => void) | null = null;
   /** The square shown on the player screen while the GM measures it. */
   private sizeSquare: HTMLElement | null = null;
+  /** Stops following the presented view's off-map colour samples. */
+  private offMapColorUnsub: (() => void) | null = null;
 
   constructor(app: App, store: StoreApi<ViewAtlasState>, settingsService: SettingsService) {
     this.app = app;
@@ -432,6 +434,7 @@ export class PlayerWindowService {
     this.holdCurrentFrame();
     this.sceneOverlays.forEach((overlay) => overlay.releaseSource?.());
     this.streamSource = CLOSED_SOURCE;
+    this.followOffMapColor(CLOSED_SOURCE);
     this.followSource();
   }
 
@@ -443,6 +446,23 @@ export class PlayerWindowService {
     this.mirror?.frame();
   }
 
+  /** Keeps the window chrome the same colour as the players' off-map margins. */
+  private followOffMapColor(source: PlayerFrameSource): void {
+    this.offMapColorUnsub?.();
+    this.offMapColorUnsub = null;
+    this.applyOffMapColor(source.offMapColor?.() ?? '#000000');
+    const bus = source.diceEvents;
+    if (!bus?.on || !bus.off) return;
+    const onColor = (hex: string): void => this.applyOffMapColor(hex);
+    bus.on('player-off-map-color', onColor);
+    this.offMapColorUnsub = (): void => { bus.off('player-off-map-color', onColor); };
+  }
+
+  private applyOffMapColor(hex: string): void {
+    this.playerWindow?.document.body.style.setProperty('--atlas-player-off-map', hex);
+    this.playerView?.contentEl.style.setProperty('--atlas-player-off-map', hex);
+  }
+
   /**
    * Resume live mirroring from `source` once the presented scene is rendered again.
    * A camera freeze stays in place, so players return to the same framing.
@@ -450,6 +470,7 @@ export class PlayerWindowService {
   public releaseHeldFrame(source: PlayerFrameSource): void {
     if (!this.isWindowOpen()) return;
     this.streamSource = source;
+    this.followOffMapColor(source);
     this.pinFrozenCamera();
     this.mirror?.markStale();
     this.presentScene();
@@ -477,6 +498,7 @@ export class PlayerWindowService {
     const anotherScene = playerWindowStore.getState().shownTabId !== tabId;
     if (anotherScene) this.crossfadeToNextMap();
     this.streamSource = source;
+    this.followOffMapColor(source);
     this.mirror?.markStale();
     this.presentScene();
     this.heldFrame = null;
@@ -513,6 +535,7 @@ export class PlayerWindowService {
     this.playerView = view;
     this.playerWindow = view.contentEl.win;
     this.streamSource = source;
+    this.followOffMapColor(source);
     this.shownCamera = null;
     this.presentation.restore(view.getState());
     this.pinFrozenCamera();
@@ -734,6 +757,7 @@ export class PlayerWindowService {
     if (!targetCtx) return;
 
     this.playerWindow.document.body.classList.add(PLAYER_WINDOW_LIVE_CLASS);
+    if (this.streamSource) this.followOffMapColor(this.streamSource);
 
     const loopId = ++this.mirrorLoopId;
     this.mirror?.stop();
@@ -995,6 +1019,8 @@ export class PlayerWindowService {
 
     this.settingsUnsubscribe?.();
     this.settingsUnsubscribe = null;
+    this.offMapColorUnsub?.();
+    this.offMapColorUnsub = null;
     this.destroySceneOverlays();
     this.mapTransition?.cancel();
     this.mapTransition = null;

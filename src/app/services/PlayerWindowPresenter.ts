@@ -268,6 +268,7 @@ async function waitForRenderedFrameSource(view: AtlasView): Promise<PlayerFrameS
       const rect = renderer.getMapImage()?.worldRect;
       return rect ? { width: rect.width, height: rect.height } : null;
     },
+    offMapColor: () => renderer.playerOffMapColorHex(),
     canRender: () => renderer.canRenderPlayerFrame(),
     release: () => renderer.releasePlayerFrame(),
     addDemandRegion: (region) => renderer.getMapImage()?.addDemandRegion(region) ?? noRegion,

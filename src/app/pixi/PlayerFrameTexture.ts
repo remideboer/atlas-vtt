@@ -1,4 +1,5 @@
 import { CanvasRenderer, Container, RenderTexture, Sprite, Texture, TexturePool, uid, WebGLRenderer, type Renderer } from 'pixi.js';
+import { DEFAULT_OFF_MAP_COLOR, offMapColorRgba } from '../player/mapEdgeColor';
 import type { FramePiece, PlayerFrame, Size } from '../types/playerFrame';
 import { contextLost } from './lighting/engine/gpu';
 
@@ -17,9 +18,6 @@ export function framePieces(frame: Size, canvas: Size): number {
   return Math.ceil(frame.width / canvas.width) * Math.ceil(frame.height / canvas.height);
 }
 
-/** What a piece is drawn over: the canvas shows a texel's colour as it is, like a frame rendered on it. */
-const OPAQUE_BLACK: [number, number, number, number] = [0, 0, 0, 1];
-
 /**
  * Renders the players' frame at a size of its own with a map view's renderer, and hands out its
  * pixels.
@@ -37,6 +35,8 @@ const OPAQUE_BLACK: [number, number, number, number] = [0, 0, 0, 1];
  *
  * The lighting composite reads the scene beneath it by copy in a texture (as in a thumbnail), so
  * the frame does not go through the canvas' back buffer; the pieces are drawn past it too.
+ *
+ * Off-map margins clear to the map's edge colour (`setClearColor`), not the GM canvas black.
  */
 export class PlayerFrameTexture {
   private texture: RenderTexture | null = null;
@@ -46,6 +46,7 @@ export class PlayerFrameTexture {
    * holds the frame before, which may be of another moment, camera or scene.
    */
   private fresh = false;
+  private clearColor: [number, number, number, number] = offMapColorRgba(DEFAULT_OFF_MAP_COLOR);
   private readonly piece = new Sprite();
   private readonly holder = new Container();
   /** The frame's size, registered as a screen of its own: PIXI's texture pool then gives a filter of the frame textures of that size, not of the next power of two. */
@@ -56,6 +57,11 @@ export class PlayerFrameTexture {
   constructor(private readonly renderer: Renderer) {
     this.holder.addChild(this.piece);
     renderer.runners.contextChange.add(this.contextListener);
+  }
+
+  /** Colour of the area outside the map in the players' picture (`0xRRGGBB`). */
+  setClearColor(color: number): void {
+    this.clearColor = offMapColorRgba(color);
   }
 
   /** Whether a frame can be rendered now; not while the graphics context is lost. */
@@ -69,7 +75,7 @@ export class PlayerFrameTexture {
     // PIXI renders nothing of a container that is not visible, and says nothing
     if (!stage.visible) return;
     const texture = this.textureFor(frame);
-    this.renderer.render({ container: stage, target: texture, clear: true, clearColor: this.renderer.background.colorRgba });
+    this.renderer.render({ container: stage, target: texture, clear: true, clearColor: this.clearColor });
     this.fresh = true;
   }
 
@@ -101,7 +107,7 @@ export class PlayerFrameTexture {
       for (let top = 0; top < height; top += canvas.height) {
         for (let left = 0; left < width; left += canvas.width) {
           this.piece.position.set(-left / resolution, -top / resolution);
-          renderer.render({ container: this.holder, clear: true, clearColor: OPAQUE_BLACK });
+          renderer.render({ container: this.holder, clear: true, clearColor: this.clearColor });
           if (!this.canRender()) return;
           copy({ image: canvas, x: 0, y: 0, width: Math.min(canvas.width, width - left), height: Math.min(canvas.height, height - top), left, top });
         }

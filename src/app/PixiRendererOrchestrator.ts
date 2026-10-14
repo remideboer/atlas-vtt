@@ -14,6 +14,7 @@ import type { ViewAtlasState, ViewAtlasStore } from './storeFactory';
 import { EventEmitter } from 'events';
 import { PixiAppManager } from "./pixi/PixiAppManager"; // Import the new manager
 import { canvasMenuEntries } from "./pixi/canvasMenu";
+import { DEFAULT_OFF_MAP_COLOR, edgeColorForPixels, offMapColorHex } from "./player/mapEdgeColor";
 import { paperFromGrid } from "./player/paperSize";
 import { openPlayerScreenSetup, sendMapAtActualSize } from "./player/sendActualSize";
 import { openContextMenuGlobal } from "./react/root/ContextMenuContext";
@@ -89,7 +90,11 @@ export class PixiRendererOrchestrator { // Renamed class
   /** The view's lighting, built and removed as the GM switches dynamic lighting on and off. */
   private lightingFeature?: LightingFeature;
   /** The players' frame, rendered at the player window's size; made when this view is first presented. */
-  private playerFrames?: Pick<PlayerFrameTexture, 'canRender' | 'render' | 'copy' | 'release' | 'destroy'>;
+  private playerFrames?: Pick<PlayerFrameTexture, 'canRender' | 'render' | 'copy' | 'release' | 'destroy' | 'setClearColor'>;
+  /** Off-map clear colour for the players' picture; the GM canvas stays black. */
+  private playerOffMapColor = DEFAULT_OFF_MAP_COLOR;
+  /** Drops edge samples that finished after another map or stretch settled. */
+  private edgeColorGeneration = 0;
   private get lighting(): LightingController | undefined {
     return this.lightingFeature?.controller;
   }
@@ -644,7 +649,34 @@ export class PixiRendererOrchestrator { // Renamed class
     if (this._isDestroyed) return;
     this.fitZoomRangeToStretch();
     this.lighting?.renderer.refreshBounds();
+    this.refreshPlayerEdgeColor();
     this.eventBus.emit('map-image-updated', this.getMapRect() ?? undefined);
+  }
+
+  /** Samples the map's edge for the players' off-map margins; ignored when a later map settles first. */
+  private refreshPlayerEdgeColor(): void {
+    const map = this.mapImage;
+    const generation = ++this.edgeColorGeneration;
+    if (!map) {
+      this.setPlayerOffMapColor(DEFAULT_OFF_MAP_COLOR);
+      return;
+    }
+    void edgeColorForPixels(map).then((color) => {
+      if (this._isDestroyed || generation !== this.edgeColorGeneration) return;
+      this.setPlayerOffMapColor(color ?? DEFAULT_OFF_MAP_COLOR);
+    });
+  }
+
+  private setPlayerOffMapColor(color: number): void {
+    if (this.playerOffMapColor === color) return;
+    this.playerOffMapColor = color;
+    this.playerFrames?.setClearColor(color);
+    this.eventBus.emit('player-off-map-color', offMapColorHex(color));
+  }
+
+  /** Colour of the area outside the map in the players' picture (`#rrggbb`). */
+  public playerOffMapColorHex(): string {
+    return offMapColorHex(this.playerOffMapColor);
   }
 
   /** A map drawn with another stretch has another size than the one the load fitted the zoom range to. */
@@ -663,6 +695,8 @@ export class PixiRendererOrchestrator { // Renamed class
     this.stopFollowingMapImage = null;
     this.mapImage?.destroy();
     this.mapImage = null;
+    this.edgeColorGeneration += 1;
+    this.setPlayerOffMapColor(DEFAULT_OFF_MAP_COLOR);
   }
 
   public toggleGrid(visible?: boolean): boolean {
@@ -794,6 +828,7 @@ export class PixiRendererOrchestrator { // Renamed class
     const viewport = this.pixiAppManager.getViewport();
     if (!app?.renderer || !viewport) return;
     const frames = this.playerFrames ??= new PlayerFrameTexture(app.renderer);
+    frames.setClearColor(this.playerOffMapColor);
     if (!frames.canRender()) return;
     // The map image at the players' own detail, put back before the DM's render
     const restoreMapImage = this.mapImage?.drawFor(frameView(frame));

@@ -5,6 +5,7 @@
 - The fog tool can cover the whole map, so a scene can start fully hidden and then be revealed.
 - The toolbar shows or hides the scene grid, without opening the command palette.
 - The Atlas dashboard opens from a home icon on the left ribbon.
+- The player view fills the area outside the map with a colour from the map's edge.
 
 ## Fixed
 

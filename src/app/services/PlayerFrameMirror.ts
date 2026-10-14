@@ -60,6 +60,8 @@ export interface PlayerFrameSource extends DemandRegions {
   getScreen?(): Screen | undefined;
   /** The loaded map's world size, a stretch included. Actual size reads a paper size against it. */
   mapWorldSize?(): Size | null;
+  /** Colour of the area outside the map (`#rrggbb`); the window chrome follows it. */
+  offMapColor?(): string;
   /** False while nothing can be rendered (a lost graphics context): players keep the last frame. */
   canRender?(): boolean;
   /** Renders the players' frame, then the DM's frame again. */
