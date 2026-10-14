@@ -10,6 +10,7 @@
 - Right-click empty space in the asset manager to create a token, add a map, or create a collection.
 - Press N, use the command palette, or right-click the empty map (Insert token at cursor) to pick a library token or a blank disc and place it at the cursor. A blank token opens Edit Token hidden from players. Spawning from the asset manager also places at the last map pointer. Edit Token can hide a token from players.
 - Edit Token can change a placed token’s art from the library, including blank.
+- Choosing a ring colour turns the ring on for any placed token, including library art saved without a ring. None hides the ring.
 
 ## Fixed
 

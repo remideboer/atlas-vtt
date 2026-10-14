@@ -184,7 +184,7 @@ export function RingColorGrid({ tokenId, closeMenu }: { tokenId: string; closeMe
           </LabelTooltip>
         );
       })}
-      <LabelTooltip label={t('menu.clearRing')}>
+      <LabelTooltip label={t('color.none')}>
         <button
           type="button"
           className="atlas-ring-swatch atlas-none"

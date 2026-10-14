@@ -1298,7 +1298,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
             
           }),
 
-          // Token ring actions
+          // Token ring actions: a colour turns the ring on; null is None (no ring).
           setTokenRing: (id, color) => set((draft) => {
             const existing = draft.objects.tokens[id];
             if (!existing) {
@@ -1310,8 +1310,10 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
             const updated: TokenEntity = { ...existing };
             if (color === null) {
               delete updated.ringColor;
+              updated.showRing = false;
             } else {
               updated.ringColor = color;
+              updated.showRing = true;
             }
 
             // Replace in map and also replace the map reference so Zustand selector fires

@@ -684,10 +684,11 @@ export class InteractionController implements ITokenInteractionController {
     }
 
 
-    // Ring color submenu
+    // Ring color submenu: None hides the ring; a colour turns it on (also for unframed assets).
+    const ringOff = token.showRing === false;
     const currentRingColor = token.ringColor;
     const ringColors = [
-      { name: t('color.default'), value: null },
+      { name: t('color.none'), value: null as string | null },
       { name: t('color.blue'), value: '#086ddd' },
       { name: t('color.orange'), value: '#ec7500' },
       { name: t('color.red'), value: '#e93147' },
@@ -707,7 +708,9 @@ export class InteractionController implements ITokenInteractionController {
       children: ringColors.map(color => ({
         type: 'item' as const,
         label: color.name,
-        checked: color.value === currentRingColor || (color.value === null && !currentRingColor),
+        checked: color.value === null
+          ? ringOff
+          : !ringOff && (currentRingColor === color.value || (!currentRingColor && color.value === '#ffffff')),
         onClick: () => this.store.getState().setTokenRing(token.id, color.value),
       })),
     });
