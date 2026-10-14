@@ -19,4 +19,8 @@ export const picker = {
   'picker.token.none': 'No tokens available.',
   'picker.token.select': 'Select a token to assign:',
   'picker.token.reassign': 'Select a different token to reassign:',
+  'picker.insert.title': 'Insert token at cursor',
+  'picker.insert.failed': 'Failed to load insert token picker',
+  'picker.insert.select': 'Select a token to place:',
+  'picker.insert.blank': 'Blank token',
 } as const satisfies Record<string, Message>;

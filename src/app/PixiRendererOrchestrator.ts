@@ -22,7 +22,7 @@ import { openContextMenuGlobal } from "./react/root/ContextMenuContext";
 import { savePlayerRotation } from "./services/deviceSettings";
 import { PlayerWindowService } from "./services/PlayerWindowService";
 import { openPlayerWindow, presentActiveTab } from "./services/PlayerWindowPresenter";
-import { insertBlankToken } from "./tools/insertBlankToken";
+import { openInsertTokenPicker } from "./packages/components/token-picker/InsertTokenPickerModal";
 import type { AtlasView } from "./atlas-view";
 import { TokenRenderer } from "./pixi/token-renderer"; // Import TokenRenderer
 // Import color utils
@@ -783,7 +783,7 @@ export class PixiRendererOrchestrator { // Renamed class
         zoomLocked: presentation?.isZoomLocked() ?? false,
         paused: players?.isPlayerPaused() ?? false,
         actualSize: presentation?.isActualSize() ?? false,
-        insertToken: () => insertBlankToken(this.obsApp, view, worldAt),
+        insertToken: () => openInsertTokenPicker(this.obsApp, view, worldAt),
         sendMap: () => { void presentActiveTab(this.obsApp); },
         sendActualSize: () => {
           const rect = this.mapImage?.worldRect;

@@ -2,7 +2,7 @@ import { useViewStoreHook } from "src/app/react/ViewStoreContext"
 import { useAtlasUI } from "src/app/react/root/AtlasUIContext"
 import { useMapHotkeys } from "../../../keyboard/useMapHotkeys"
 import { AMBIENT_AUDIO_ENABLED } from "../../../featureFlags"
-import { insertBlankToken } from "../../../tools/insertBlankToken"
+import { openInsertTokenPicker } from "../token-picker/InsertTokenPickerModal"
 import { MEASURE_SHAPES, MEASURE_TOOLS, isMeasureTool, type Tool } from "./toolFaces"
 import { useEmitViewEvent } from "./useEmitViewEvent"
 
@@ -59,7 +59,7 @@ export function useToolbarHotkeys(viewId: string | undefined, isPlayerView: bool
       state.setGridVisible(state.grid?.visible === false);
     }),
     pin: dmOnly(() => selectTool("note-pin")),
-    insertToken: dmOnly(() => insertBlankToken(app, view)),
+    insertToken: dmOnly(() => openInsertTokenPicker(app, view)),
     wall: dmOnly(() => selectTool("wall")),
     audio: dmOnly(() => { if (AMBIENT_AUDIO_ENABLED) selectTool("audio") }),
     diceTray: () => store.getState().setDiceTrayOpen(!store.getState().isDiceTrayOpen),

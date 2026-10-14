@@ -49,7 +49,7 @@ import { SceneSnapshotsPanel } from './command-palette/SceneSnapshotsPanel';
 import { placePalette, type PalettePosition } from './command-palette/palettePlacement';
 import { customizeToolbarCommand } from './command-palette/customizeToolbarCommand';
 import { isSettingsPanelId, type CommandOption, type SettingsPanelId } from './command-palette/types';
-import { insertBlankToken } from '../../tools/insertBlankToken';
+import { openInsertTokenPicker } from '../../packages/components/token-picker/InsertTokenPickerModal';
 import { t } from '../../i18n';
 
 interface CommandPaletteProps {
@@ -246,7 +246,7 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       shortcut: hotkeyLabel('insertToken'),
       section: "tools",
       action: () => {
-        insertBlankToken(app, view);
+        openInsertTokenPicker(app, view);
         onClose();
       },
     },

@@ -19,4 +19,8 @@ export const picker: Translation = {
   'picker.token.none': 'Токенов нет.',
   'picker.token.select': 'Выберите токен:',
   'picker.token.reassign': 'Выберите другой токен:',
+  'picker.insert.title': 'Вставить токен под курсором',
+  'picker.insert.failed': 'Не удалось загрузить выбор токена',
+  'picker.insert.select': 'Выберите токен для размещения:',
+  'picker.insert.blank': 'Пустой токен',
 };

@@ -198,6 +198,11 @@
     height: 100%;
     object-fit: cover;
   }
+
+  &--blank {
+    border: 2px dashed var(--background-modifier-border);
+    background: transparent;
+  }
 }
 
 .token-picker-current-badge {
