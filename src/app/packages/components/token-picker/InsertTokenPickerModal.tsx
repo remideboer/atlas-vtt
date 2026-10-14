@@ -10,6 +10,8 @@ import { monsterResources } from '../../../fiveETools/monsterResources';
 import type { FiveEMonster } from '../../../fiveETools/types';
 import { mapResources } from '../../../resources/collectionResources';
 import { AssetService, type TokenAsset as ServiceTokenAsset } from '../../../services/AssetService';
+import { tokenForCreature } from '../../../services/creatureNote';
+import { currentFantasyStatblock } from '../../../services/currentFantasyStatblock';
 import { initiativeEntryForToken } from '../../../stores/initiativeEntries';
 import { playerWindowStore } from '../../../stores/playerWindowStore';
 import { insertBlankToken } from '../../../tools/insertBlankToken';
@@ -245,6 +247,35 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
     new TokenCreatorModal(app, { selectedCollection: collectionId(), initialSource: 'images' }).open();
   };
 
+  const currentStatblock = currentFantasyStatblock(app);
+
+  const insertCurrentStatblock = (): void => {
+    if (busy) return;
+    const creature = currentFantasyStatblock(app);
+    if (!creature) {
+      new Notice(t('picker.insert.currentNone'));
+      return;
+    }
+    setBusy(true);
+    void tokenForCreature(app, creature, collectionId())
+      .then((token) => {
+        if (!token) {
+          setBusy(false);
+          return;
+        }
+        return spawnTokenAsset(spawnCtx(), spawnAssetOf(token), 1, spawnOptions()).then((ids) => {
+          afterSpawn(ids);
+          setBusy(false);
+          onClose();
+        });
+      })
+      .catch((error) => {
+        console.error('[InsertTokenPicker] Failed to insert the current statblock:', error);
+        new Notice(t('picker.insert.currentImportFailed'));
+        setBusy(false);
+      });
+  };
+
   return (
     <div className="token-picker-insert">
       <div className="token-picker-insert-toolbar">
@@ -264,6 +295,14 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
               {t('picker.insert.createToken')}
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={insertCurrentStatblock}
+            disabled={busy || currentStatblock === null}
+          >
+            {t('picker.insert.currentStatblock')}
+          </Button>
           <Button variant="default" size="sm" onClick={onDone} disabled={busy}>
             {t('picker.insert.done')}
           </Button>

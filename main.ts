@@ -56,6 +56,7 @@ import { IssueReporter } from './src/app/support/IssueReporter';
 import { runInBackground } from './src/app/utils/backgroundTask';
 import { TileDecoderClient } from './src/app/pixi/mapImage/TileDecoderClient';
 import { MapImageService } from './src/app/pixi/mapImage/MapImageService';
+import { watchFantasyStatblockPanes } from './src/app/services/currentFantasyStatblock';
 
 declare const __ATLAS_RELEASE_BUILD__: boolean;
 
@@ -142,8 +143,10 @@ export default class AtlasVTTPlugin extends Plugin {
       imageDisplay: this.imageDisplayService,
       assetManager: this.globalAssetManager,
     });
+    this.registerEvent(this.app.workspace.on('layout-change', () => watchFantasyStatblockPanes(this.app)));
 
     this.app.workspace.onLayoutReady(() => {
+      watchFantasyStatblockPanes(this.app);
       registerColorSwatchIcons();
       this.imageDisplayService.registerContextMenu();
       registerStatusBarVisibility(this);
