@@ -47,6 +47,11 @@ export interface BaseToken {
   conditionValues?: Record<string, number>;
   /** Whether the token is hidden (visible to DM but not players) */
   isHidden?: boolean;
+  /**
+   * When true, resource bars stay on the DM canvas but are not drawn in the player view.
+   * Unset means both views show the bars when values exist.
+   */
+  hideBarsFromPlayers?: boolean;
   /** The side the token fights on where initiative runs by sides. Read with `sideOf`: unset, a token that sees is the players'. */
   side?: InitiativeSide;
   /** How the token sees when the scene has dynamic lighting. */

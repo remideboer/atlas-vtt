@@ -10,6 +10,8 @@ export const editToken: Translation = {
   'editToken.showNameplate': 'Показывать имя',
   'editToken.hiddenFromPlayers': 'Скрыт от игроков',
   'editToken.hiddenFromPlayersHint': 'Игроки не видят этот токен на карте и в инициативе',
+  'editToken.hideBarsFromPlayers': 'Скрыть полосы от игроков',
+  'editToken.hideBarsFromPlayersHint': 'Полосы ресурсов остаются на карте мастера; в окне игроков их нет',
   'editToken.resources': 'Ресурсы',
   'editToken.resetStatblock': 'Сбросить к значению статблока',
 };

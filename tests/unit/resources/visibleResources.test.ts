@@ -16,6 +16,12 @@ describe('visibleResources', () => {
     expect(visibleResources(token, definitions, 'player').map((r) => r.definition.key)).toEqual(['hp']);
   });
 
+  it('hides all bars from the player viewer when the token asks, and keeps them for the DM', () => {
+    const hidden = { ...token, hideBarsFromPlayers: true as const };
+    expect(visibleResources(hidden, definitions, 'player')).toEqual([]);
+    expect(visibleResources(hidden, definitions, 'dm').map((r) => r.definition.key)).toEqual(['hp', 'str']);
+  });
+
   it('hides values without a usable maximum', () => {
     expect(visibleResources({ resources: { hp: { current: 0, max: 0 } } }, definitions, 'dm')).toEqual([]);
   });

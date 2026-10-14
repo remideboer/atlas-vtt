@@ -12,6 +12,7 @@ export function visibleResources(
   definitions: readonly ResourceDefinition[],
   viewer: ResourceViewer,
 ): VisibleResource[] {
+  if (viewer === 'player' && token.hideBarsFromPlayers) return [];
   const shown: VisibleResource[] = [];
   for (const { definition, slot } of slottedResources(definitions)) {
     if (viewer === 'player' && !definition.visibleToPlayers) continue;

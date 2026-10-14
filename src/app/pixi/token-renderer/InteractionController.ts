@@ -574,6 +574,20 @@ export class InteractionController implements ITokenInteractionController {
       ),
     });
 
+    // Bars on the DM canvas only; the clicked token decides which way for the selection
+    const hideBars = currentToken?.hideBarsFromPlayers === true;
+    entries.push({
+      type: 'item',
+      label: hideBars ? t('token.showBarsToPlayers') : t('token.hideBarsFromPlayers'),
+      icon: hideBars ? 'eye' : 'eye-off',
+      onClick: () => this.store.getState().updateTokens(
+        hideTargets.map((id) => ({
+          id,
+          changes: { hideBarsFromPlayers: hideBars ? undefined : true },
+        })),
+      ),
+    });
+
     // Vision and carried light, for the selection the token belongs to
     if (!this.isPlayerView && dynamicLightingOn(this.obsApp)) {
       const lightPresets = mapLightPresets(this.obsApp, this.store.getState());

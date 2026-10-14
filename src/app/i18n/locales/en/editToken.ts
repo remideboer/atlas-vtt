@@ -10,6 +10,8 @@ export const editToken = {
   'editToken.showNameplate': 'Show nameplate',
   'editToken.hiddenFromPlayers': 'Hidden from players',
   'editToken.hiddenFromPlayersHint': 'Players do not see this token on the map or in initiative',
+  'editToken.hideBarsFromPlayers': 'Hide bars from players',
+  'editToken.hideBarsFromPlayersHint': 'Resource bars stay on the GM map; the player view does not show them',
   'editToken.resources': 'Resources',
   'editToken.resetStatblock': 'Reset to statblock default',
 } as const satisfies Record<string, Message>;

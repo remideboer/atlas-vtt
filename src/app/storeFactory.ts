@@ -348,6 +348,10 @@ function applyTokenUpdates(
     ? { ...updates, imagePath: normalizeImagePath(updates.imagePath ?? '') }
     : updates;
   Object.assign(token, normalized);
+  // Optional flags given as undefined are removed so they are not stored as nullish fields.
+  if (Object.prototype.hasOwnProperty.call(normalized, 'hideBarsFromPlayers') && normalized.hideBarsFromPlayers !== true) {
+    delete token.hideBarsFromPlayers;
+  }
   if (artChanged && tokens) {
     token.instanceNumber = computeNextInstanceNumber(tokens, token.imagePath, token.id);
   }

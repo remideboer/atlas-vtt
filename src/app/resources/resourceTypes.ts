@@ -58,4 +58,6 @@ export interface ResourceHolder {
   resources?: Record<string, ResourceValue> | undefined;
   /** Keys whose maximum was set by hand and no longer follows the statblock. */
   overriddenMax?: string[] | undefined;
+  /** When true, the player view draws no resource bars for this token; the DM still does. */
+  hideBarsFromPlayers?: boolean | undefined;
 }

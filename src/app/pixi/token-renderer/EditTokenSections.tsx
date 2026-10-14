@@ -56,6 +56,9 @@ interface TokenIdentitySectionProps {
   /** Hidden from the player view and initiative list. */
   isHidden: boolean;
   onHiddenChange: (hidden: boolean) => void;
+  /** Resource bars stay on the DM canvas but are not drawn in the player view. */
+  hideBarsFromPlayers: boolean;
+  onHideBarsFromPlayersChange: (hide: boolean) => void;
   /** The name field, which takes the focus when the dialog opens. */
   nameRef: React.Ref<HTMLInputElement>;
 }
@@ -69,6 +72,8 @@ export function TokenIdentitySection({
   onShowNameplateChange,
   isHidden,
   onHiddenChange,
+  hideBarsFromPlayers,
+  onHideBarsFromPlayersChange,
   nameRef,
 }: TokenIdentitySectionProps): React.ReactElement {
   const nameId = useId();
@@ -103,6 +108,12 @@ export function TokenIdentitySection({
         hint={t('editToken.hiddenFromPlayersHint')}
         value={isHidden}
         onChange={onHiddenChange}
+      />
+      <SwitchRow
+        label={t('editToken.hideBarsFromPlayers')}
+        hint={t('editToken.hideBarsFromPlayersHint')}
+        value={hideBarsFromPlayers}
+        onChange={onHideBarsFromPlayersChange}
       />
     </EditTokenSection>
   );

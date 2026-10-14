@@ -38,6 +38,7 @@ interface EditTokenValues {
   showRing?: boolean | undefined;
   showNameplate: boolean;
   isHidden: boolean;
+  hideBarsFromPlayers: boolean;
   /** Maximum per resource key; undefined follows the statblock, or removes a resource the statblock lacks. */
   maxima: Record<string, number | undefined>;
   vision: VisionForm;
@@ -73,6 +74,7 @@ function EditTokenModalInner({ app, initial, definitions, resourceDefaults, ligh
   const [showRing, setShowRing] = useState(initial.showRing);
   const [showNameplate, setShowNameplate] = useState(initial.showNameplate);
   const [isHidden, setIsHidden] = useState(initial.isHidden);
+  const [hideBarsFromPlayers, setHideBarsFromPlayers] = useState(initial.hideBarsFromPlayers);
   const [maxInputs, setMaxInputs] = useState<Record<string, string>>(
     () => Object.fromEntries(definitions.map(({ key }) => [key, numberText(initial.maxima[key])])),
   );
@@ -97,6 +99,7 @@ function EditTokenModalInner({ app, initial, definitions, resourceDefaults, ligh
       showRing,
       showNameplate,
       isHidden,
+      hideBarsFromPlayers,
       maxima: Object.fromEntries(definitions.map(({ key }) => [key, parseNumberInput(maxInputs[key] ?? '')])),
       vision,
       light,
@@ -158,6 +161,8 @@ function EditTokenModalInner({ app, initial, definitions, resourceDefaults, ligh
               onShowNameplateChange={setShowNameplate}
               isHidden={isHidden}
               onHiddenChange={setIsHidden}
+              hideBarsFromPlayers={hideBarsFromPlayers}
+              onHideBarsFromPlayersChange={setHideBarsFromPlayers}
               nameRef={inputRef}
             />
             {definitions.length > 0 && (
@@ -243,6 +248,7 @@ export function openEditTokenModal(
     showRing: token.showRing,
     showNameplate: token.showNameplate ?? false,
     isHidden: token.isHidden ?? false,
+    hideBarsFromPlayers: token.hideBarsFromPlayers === true,
     maxima: Object.fromEntries(definitions.map(({ key }) => [key, character?.resources?.[key]?.max])),
     vision: visionForm(token.vision, lighting.senses),
     light: lightForm(token.light, lighting.lightPresets),
@@ -264,6 +270,9 @@ export function openEditTokenModal(
       ...(changed('showRing') && { showRing: values.showRing }),
       ...(changed('showNameplate') && { showNameplate: values.showNameplate }),
       ...(changed('isHidden') && { isHidden: values.isHidden }),
+      ...(changed('hideBarsFromPlayers') && {
+        hideBarsFromPlayers: values.hideBarsFromPlayers ? true : undefined,
+      }),
       ...(changed('vision') && { vision: visionFromForm(values.vision) }),
       ...(changed('light') && { light: lightFromForm(values.light) }),
       ...(maxima.length > 0 && current && buildResourceEdits(
