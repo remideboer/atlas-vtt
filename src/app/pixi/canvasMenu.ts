@@ -10,6 +10,7 @@ export interface CanvasMenuActions {
   zoomLocked: boolean;
   paused: boolean;
   actualSize: boolean;
+  insertToken(): void;
   sendMap(): void;
   sendActualSize(): void;
   openScreenSetup(): void;
@@ -28,8 +29,14 @@ function angleLabel(rotation: PlayerRotation): string {
   return t('player.rotation270');
 }
 
-/** The blank-map menu: player commands, the player-view angles, and the map's own quarter-turns. */
+/** The blank-map menu: insert token, player commands, the player-view angles, and the map's own quarter-turns. */
 export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[] {
+  const insertToken: ContextMenuEntry = {
+    type: 'item',
+    label: t('palette.insertBlankToken'),
+    icon: 'circle-user',
+    onClick: () => actions.insertToken(),
+  };
   const commands: ContextMenuEntry = {
     type: 'submenu',
     label: t('player.commands'),
@@ -84,5 +91,5 @@ export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[
       onClick: () => actions.setMapOrientation(angle),
     })),
   };
-  return [commands, rotation, map];
+  return [insertToken, commands, rotation, map];
 }

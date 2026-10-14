@@ -24,6 +24,7 @@ export const MAP_HOTKEYS = [
   { id: 'text', label: t('hotkey.text'), group: t('hotkey.group.tools'), defaultKey: 't', dmOnly: true },
   { id: 'measure', label: t('hotkey.measure'), group: t('hotkey.group.tools'), defaultKey: 'm' },
   { id: 'pin', label: t('hotkey.pin'), group: t('hotkey.group.tools'), defaultKey: 'p', dmOnly: true },
+  { id: 'insertToken', label: t('hotkey.insertToken'), group: t('hotkey.group.tools'), defaultKey: 'n', dmOnly: true },
   { id: 'wall', label: t('hotkey.wall'), group: t('hotkey.group.tools'), defaultKey: 'w', dmOnly: true, experimental: 'dynamicLighting' },
   { id: 'audio', label: t('hotkey.audio'), group: t('hotkey.group.tools'), defaultKey: 's', dmOnly: true, enabled: AMBIENT_AUDIO_ENABLED },
   { id: 'selectAll', label: t('hotkey.selectAll'), group: t('hotkey.group.editing'), defaultKey: 'Mod+a', dmOnly: true },

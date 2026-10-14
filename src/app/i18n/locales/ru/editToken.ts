@@ -7,6 +7,8 @@ export const editToken: Translation = {
   'editToken.name': 'Название',
   'editToken.namePlaceholder': 'Название токена',
   'editToken.showNameplate': 'Показывать имя',
+  'editToken.hiddenFromPlayers': 'Скрыт от игроков',
+  'editToken.hiddenFromPlayersHint': 'Игроки не видят этот токен на карте и в инициативе',
   'editToken.resources': 'Ресурсы',
   'editToken.resetStatblock': 'Сбросить к значению статблока',
 };

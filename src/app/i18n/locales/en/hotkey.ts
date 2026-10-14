@@ -17,6 +17,7 @@ export const hotkey = {
   'hotkey.text': 'Text tool',
   'hotkey.measure': 'Measure tools',
   'hotkey.pin': 'Note pin',
+  'hotkey.insertToken': 'Insert blank token at cursor',
   'hotkey.wall': 'Lighting (walls and lights)',
   'hotkey.audio': 'Ambient audio',
   'hotkey.selectAll': 'Select all tokens',

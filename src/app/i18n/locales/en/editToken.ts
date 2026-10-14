@@ -7,6 +7,8 @@ export const editToken = {
   'editToken.name': 'Name',
   'editToken.namePlaceholder': 'Token name',
   'editToken.showNameplate': 'Show nameplate',
+  'editToken.hiddenFromPlayers': 'Hidden from players',
+  'editToken.hiddenFromPlayersHint': 'Players do not see this token on the map or in initiative',
   'editToken.resources': 'Resources',
   'editToken.resetStatblock': 'Reset to statblock default',
 } as const satisfies Record<string, Message>;

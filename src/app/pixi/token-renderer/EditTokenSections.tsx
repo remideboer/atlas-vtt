@@ -48,11 +48,22 @@ interface TokenIdentitySectionProps {
   onNameChange: (name: string) => void;
   showNameplate: boolean;
   onShowNameplateChange: (show: boolean) => void;
+  /** Hidden from the player view and initiative list. */
+  isHidden: boolean;
+  onHiddenChange: (hidden: boolean) => void;
   /** The name field, which takes the focus when the dialog opens. */
   nameRef: React.Ref<HTMLInputElement>;
 }
 
-export function TokenIdentitySection({ name, onNameChange, showNameplate, onShowNameplateChange, nameRef }: TokenIdentitySectionProps): React.ReactElement {
+export function TokenIdentitySection({
+  name,
+  onNameChange,
+  showNameplate,
+  onShowNameplateChange,
+  isHidden,
+  onHiddenChange,
+  nameRef,
+}: TokenIdentitySectionProps): React.ReactElement {
   const nameId = useId();
   return (
     <EditTokenSection title="Token">
@@ -69,6 +80,12 @@ export function TokenIdentitySection({ name, onNameChange, showNameplate, onShow
         />
       </div>
       <SwitchRow label={t('editToken.showNameplate')} value={showNameplate} onChange={onShowNameplateChange} />
+      <SwitchRow
+        label={t('editToken.hiddenFromPlayers')}
+        hint={t('editToken.hiddenFromPlayersHint')}
+        value={isHidden}
+        onChange={onHiddenChange}
+      />
     </EditTokenSection>
   );
 }

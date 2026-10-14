@@ -9,6 +9,7 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     zoomLocked: false,
     paused: false,
     actualSize: false,
+    insertToken: vi.fn(),
     sendMap: vi.fn(),
     sendActualSize: vi.fn(),
     openScreenSetup: vi.fn(),
@@ -23,11 +24,13 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
 }
 
 describe('blank canvas menu', () => {
-  it('offers commands and the four rotation choices, with the active angle checked', () => {
+  it('offers insert token, commands and the four rotation choices, with the active angle checked', () => {
     const menu = canvasMenuEntries(actions({ rotation: 90, zoomLocked: true, paused: true }));
-    expect(menu).toHaveLength(3);
-    const commands = menu[0];
-    const rotation = menu[1];
+    expect(menu).toHaveLength(4);
+    const insert = menu[0];
+    const commands = menu[1];
+    const rotation = menu[2];
+    expect(insert?.type).toBe('item');
     expect(commands?.type).toBe('submenu');
     expect(rotation?.type).toBe('submenu');
     if (rotation?.type !== 'submenu' || typeof rotation.children === 'function') throw new Error('rotation submenu');
@@ -39,15 +42,23 @@ describe('blank canvas menu', () => {
     expect(zoom?.type).toBe('item');
     if (pause?.type === 'item') expect(pause.checked).toBe(true);
     if (zoom?.type === 'item') expect(zoom.checked).toBe(true);
-    const map = menu[2];
+    const map = menu[3];
     if (map?.type !== 'submenu' || typeof map.children === 'function') throw new Error('map submenu');
     expect(map.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([true, false, false, false]);
+  });
+
+  it('inserts a blank token from the first entry', () => {
+    const menuActions = actions();
+    const menu = canvasMenuEntries(menuActions);
+    const insert = menu[0];
+    if (insert?.type === 'item') insert.onClick();
+    expect(menuActions.insertToken).toHaveBeenCalledOnce();
   });
 
   it('turns the map by a quarter from the menu', () => {
     const menuActions = actions({ mapOrientation: 180 });
     const menu = canvasMenuEntries(menuActions);
-    const map = menu[2];
+    const map = menu[3];
     if (map?.type !== 'submenu' || typeof map.children === 'function') throw new Error('map');
     const quarter = map.children[1];
     if (quarter?.type === 'item') quarter.onClick();
@@ -57,7 +68,7 @@ describe('blank canvas menu', () => {
   it('runs the command action and does not call a rotation that is already selected through the entry', () => {
     const menuActions = actions();
     const menu = canvasMenuEntries(menuActions);
-    const commands = menu[0];
+    const commands = menu[1];
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands');
     const send = commands.children[0];
     if (send?.type === 'item') send.onClick();
@@ -73,7 +84,7 @@ describe('blank canvas menu', () => {
   it('marks actual size when it is on and opens the screen setup', () => {
     const menuActions = actions({ actualSize: true });
     const menu = canvasMenuEntries(menuActions);
-    const commands = menu[0];
+    const commands = menu[1];
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands');
     const actual = commands.children[1];
     const setup = commands.children[2];

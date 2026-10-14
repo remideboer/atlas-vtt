@@ -17,6 +17,7 @@ export const hotkey: Translation = {
   'hotkey.text': 'Текст',
   'hotkey.measure': 'Линейка',
   'hotkey.pin': 'Пин заметки',
+  'hotkey.insertToken': 'Вставить пустой токен под курсором',
   'hotkey.wall': 'Освещение (стены и свет)',
   'hotkey.audio': 'Звук окружения',
   'hotkey.selectAll': 'Выбрать все токены',

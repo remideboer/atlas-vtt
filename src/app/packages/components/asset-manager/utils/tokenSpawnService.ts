@@ -21,6 +21,7 @@ import { mapVisionDefaults } from '../../../../gameSystems/visionDefaults';
 import { systemPresetsOf } from '../../../../services/mapCollectionRules';
 import type { TokenVision, TokenVisionDefaults } from '../../../../types/lightingTypes';
 import { placementVision } from '../../../../creatures/placementVision';
+import { mapPasteTarget } from '../../../../clipboard/mapPasteTarget';
 
 // ─── Viewport helpers ───────────────────────────────────────────────
 
@@ -45,6 +46,8 @@ export interface SpawnContext {
   /** The view the asset manager belongs to; null for the global asset manager. */
   view: AtlasView | null;
   assetService: AssetService | null;
+  /** World point to centre the spawn on; unset uses the last map pointer, else the viewport centre. */
+  at?: { x: number; y: number };
 }
 
 interface SpawnTarget {
@@ -88,6 +91,12 @@ function getViewportCenter(viewport: ViewportLike): { x: number; y: number } {
   } catch {
     return { x: viewport.x || 0, y: viewport.y || 0 };
   }
+}
+
+/** Where a spawn centres: an explicit point, the last place over the map, or the viewport centre. */
+function spawnOrigin(ctx: SpawnContext, target: SpawnTarget): { x: number; y: number } {
+  if (ctx.at) return ctx.at;
+  return mapPasteTarget(target.view) ?? getViewportCenter(target.viewport);
 }
 
 // ─── Grid layout helper ─────────────────────────────────────────────
@@ -251,9 +260,9 @@ export async function spawnTokenAsset(
 ): Promise<string[]> {
   const target = await getSpawnTarget(ctx);
   if (!target) return [];
-  const { viewport, grid, pitch } = target;
+  const { grid, pitch } = target;
   const gridSystem = grid ? target.gridSystem : null;
-  const center = getViewportCenter(viewport);
+  const center = spawnOrigin(ctx, target);
   const source = await resolveTokenSource(ctx, asset);
   if (!source) return [];
 
@@ -275,9 +284,9 @@ export async function spawnEncounterTokens(
 ): Promise<string[]> {
   const target = await getSpawnTarget(ctx);
   if (!target) return [];
-  const { viewport, grid, pitch } = target;
+  const { grid, pitch } = target;
   const gridSystem = grid ? target.gridSystem : null;
-  const center = getViewportCenter(viewport);
+  const center = spawnOrigin(ctx, target);
   const tokensToSpawn = encounter.tokens || [];
 
   const slots = encounterSlots(encounter);
@@ -340,9 +349,9 @@ export async function spawnSelectedTokens(
 ): Promise<string[]> {
   const target = await getSpawnTarget(ctx);
   if (!target) return [];
-  const { viewport, grid, pitch } = target;
+  const { grid, pitch } = target;
   const gridSystem = grid ? target.gridSystem : null;
-  const center = getViewportCenter(viewport);
+  const center = spawnOrigin(ctx, target);
   const tokensToSpawn = selectedAssets.filter(a => a.type === 'tokens');
 
   const definitions = targetResources(ctx, target);

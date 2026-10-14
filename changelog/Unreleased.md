@@ -8,6 +8,7 @@
 - The player view fills the area outside the map with a colour from the map's edge.
 - When the grid is on, the player view continues its lines into the area outside the map.
 - Right-click empty space in the asset manager to create a token, add a map, or create a collection.
+- Press N, use the command palette, or right-click the empty map to place a blank hidden token at the cursor and open Edit Token. Spawning from the asset manager also places at the last map pointer. Edit Token can hide a token from players.
 
 ## Fixed
 

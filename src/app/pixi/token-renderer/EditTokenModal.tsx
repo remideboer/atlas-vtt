@@ -32,6 +32,7 @@ import { t } from '../../i18n';
 interface EditTokenValues {
   name: string;
   showNameplate: boolean;
+  isHidden: boolean;
   /** Maximum per resource key; undefined follows the statblock, or removes a resource the statblock lacks. */
   maxima: Record<string, number | undefined>;
   vision: VisionForm;
@@ -62,6 +63,7 @@ function EditTokenModalInner({ initial, definitions, resourceDefaults, lighting,
   const inherited = useStatblockSenses(statblock);
   const [name, setName] = useState(initial.name);
   const [showNameplate, setShowNameplate] = useState(initial.showNameplate);
+  const [isHidden, setIsHidden] = useState(initial.isHidden);
   const [maxInputs, setMaxInputs] = useState<Record<string, string>>(
     () => Object.fromEntries(definitions.map(({ key }) => [key, numberText(initial.maxima[key])])),
   );
@@ -81,6 +83,7 @@ function EditTokenModalInner({ initial, definitions, resourceDefaults, lighting,
     onSave({
       name,
       showNameplate,
+      isHidden,
       maxima: Object.fromEntries(definitions.map(({ key }) => [key, parseNumberInput(maxInputs[key] ?? '')])),
       vision,
       light,
@@ -114,7 +117,15 @@ function EditTokenModalInner({ initial, definitions, resourceDefaults, lighting,
 
         <div className="atlas-modal-body atlas-edit-token__body">
           <div className="atlas-edit-token__column">
-            <TokenIdentitySection name={name} onNameChange={setName} showNameplate={showNameplate} onShowNameplateChange={setShowNameplate} nameRef={inputRef} />
+            <TokenIdentitySection
+              name={name}
+              onNameChange={setName}
+              showNameplate={showNameplate}
+              onShowNameplateChange={setShowNameplate}
+              isHidden={isHidden}
+              onHiddenChange={setIsHidden}
+              nameRef={inputRef}
+            />
             {definitions.length > 0 && (
               <TokenResourcesSection
                 definitions={definitions}
@@ -194,6 +205,7 @@ export function openEditTokenModal(
   const initial: EditTokenValues = {
     name: character?.name ?? '',
     showNameplate: token.showNameplate ?? false,
+    isHidden: token.isHidden ?? false,
     maxima: Object.fromEntries(definitions.map(({ key }) => [key, character?.resources?.[key]?.max])),
     vision: visionForm(token.vision, lighting.senses),
     light: lightForm(token.light, lighting.lightPresets),
@@ -211,6 +223,7 @@ export function openEditTokenModal(
     const updates: TokenUpdates = {
       ...(changed('name') && { name: values.name }),
       ...(changed('showNameplate') && { showNameplate: values.showNameplate }),
+      ...(changed('isHidden') && { isHidden: values.isHidden }),
       ...(changed('vision') && { vision: visionFromForm(values.vision) }),
       ...(changed('light') && { light: lightFromForm(values.light) }),
       ...(maxima.length > 0 && current && buildResourceEdits(

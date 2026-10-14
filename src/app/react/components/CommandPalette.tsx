@@ -9,6 +9,7 @@ import {
   Cloud,
   Ruler,
   MapPin,
+  CircleUser,
   FolderOpen,
   Dices,
   Eye,
@@ -48,6 +49,7 @@ import { SceneSnapshotsPanel } from './command-palette/SceneSnapshotsPanel';
 import { placePalette, type PalettePosition } from './command-palette/palettePlacement';
 import { customizeToolbarCommand } from './command-palette/customizeToolbarCommand';
 import { isSettingsPanelId, type CommandOption, type SettingsPanelId } from './command-palette/types';
+import { insertBlankToken } from '../../tools/insertBlankToken';
 import { t } from '../../i18n';
 
 interface CommandPaletteProps {
@@ -233,6 +235,18 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       section: "tools",
       action: () => {
         setActiveTool("note-pin");
+        onClose();
+      },
+    },
+    {
+      id: "insert-blank-token",
+      icon: <CircleUser />,
+      label: t('palette.insertBlankToken'),
+      keywords: ["token", "npc", "blank", "hidden", "new"],
+      shortcut: hotkeyLabel('insertToken'),
+      section: "tools",
+      action: () => {
+        insertBlankToken(app, view);
         onClose();
       },
     },

@@ -2,6 +2,7 @@ import { useViewStoreHook } from "src/app/react/ViewStoreContext"
 import { useAtlasUI } from "src/app/react/root/AtlasUIContext"
 import { useMapHotkeys } from "../../../keyboard/useMapHotkeys"
 import { AMBIENT_AUDIO_ENABLED } from "../../../featureFlags"
+import { insertBlankToken } from "../../../tools/insertBlankToken"
 import { MEASURE_SHAPES, MEASURE_TOOLS, isMeasureTool, type Tool } from "./toolFaces"
 import { useEmitViewEvent } from "./useEmitViewEvent"
 
@@ -27,7 +28,7 @@ interface ToolbarHotkeyActions {
 export function useToolbarHotkeys(viewId: string | undefined, isPlayerView: boolean, actions: ToolbarHotkeyActions): void {
   const store = useViewStoreHook()
   const emit = useEmitViewEvent()
-  const { renderer } = useAtlasUI()
+  const { app, view, renderer } = useAtlasUI()
   const { selectTool, toggleAssetManager, closeAssetManager, toggleGMView, closeMenus } = actions
   const activeTool = (): Tool => store.getState().activeTool
   const dmOnly = (action: () => void) => (): void => {
@@ -58,6 +59,7 @@ export function useToolbarHotkeys(viewId: string | undefined, isPlayerView: bool
       state.setGridVisible(state.grid?.visible === false);
     }),
     pin: dmOnly(() => selectTool("note-pin")),
+    insertToken: dmOnly(() => insertBlankToken(app, view)),
     wall: dmOnly(() => selectTool("wall")),
     audio: dmOnly(() => { if (AMBIENT_AUDIO_ENABLED) selectTool("audio") }),
     diceTray: () => store.getState().setDiceTrayOpen(!store.getState().isDiceTrayOpen),

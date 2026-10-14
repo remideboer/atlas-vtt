@@ -14,6 +14,7 @@ import type { ViewAtlasState, ViewAtlasStore } from './storeFactory';
 import { EventEmitter } from 'events';
 import { PixiAppManager } from "./pixi/PixiAppManager"; // Import the new manager
 import { canvasMenuEntries } from "./pixi/canvasMenu";
+import { mapPasteTarget } from "./clipboard/mapPasteTarget";
 import { DEFAULT_OFF_MAP_COLOR, edgeColorForPixels, offMapColorHex } from "./player/mapEdgeColor";
 import { paperFromGrid } from "./player/paperSize";
 import { openPlayerScreenSetup, sendMapAtActualSize } from "./player/sendActualSize";
@@ -21,6 +22,8 @@ import { openContextMenuGlobal } from "./react/root/ContextMenuContext";
 import { savePlayerRotation } from "./services/deviceSettings";
 import { PlayerWindowService } from "./services/PlayerWindowService";
 import { openPlayerWindow, presentActiveTab } from "./services/PlayerWindowPresenter";
+import { insertBlankToken } from "./tools/insertBlankToken";
+import type { AtlasView } from "./atlas-view";
 import { TokenRenderer } from "./pixi/token-renderer"; // Import TokenRenderer
 // Import color utils
 import { PinRenderer } from "./pixi/PinRenderer"; // Import PinRenderer
@@ -765,19 +768,22 @@ export class PixiRendererOrchestrator { // Renamed class
    * stage's own render, which puts the DM's frame back), the DM's frame is rendered again here.
    * Nothing is rendered or copied while the graphics context is lost.
    */
-  /** Right-click on empty map in the GM view: player commands and the map's quarter-turns. */
+  /** Right-click on empty map in the GM view: insert token, player commands and the map's quarter-turns. */
   private wireBlankContextMenu(): void {
     this.pixiAppManager.setBlankContextMenu((x, y) => {
       const state = this.store.getState();
       if (this._isDestroyed || !state.isGMView || state.isPlayerView || !state.mapLoaded) return;
       const players = PlayerWindowService.getInstance();
       const presentation = players?.playerPresentation();
+      const view = this.getSourceLeaf()?.view as AtlasView | undefined ?? null;
+      const worldAt = mapPasteTarget(view, { x, y });
       openContextMenuGlobal(canvasMenuEntries({
         rotation: presentation?.rotation ?? 0,
         mapOrientation: readMapOrientation(state.grid?.mapOrientation),
         zoomLocked: presentation?.isZoomLocked() ?? false,
         paused: players?.isPlayerPaused() ?? false,
         actualSize: presentation?.isActualSize() ?? false,
+        insertToken: () => insertBlankToken(this.obsApp, view, worldAt),
         sendMap: () => { void presentActiveTab(this.obsApp); },
         sendActualSize: () => {
           const rect = this.mapImage?.worldRect;

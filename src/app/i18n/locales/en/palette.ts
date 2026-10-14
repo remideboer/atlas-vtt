@@ -19,6 +19,7 @@ export const palette = {
   'palette.noResults': 'No results found',
   'palette.noResultsHint': 'Try a different search term',
   'palette.notePinTool': 'Note Pin Tool',
+  'palette.insertBlankToken': 'Insert blank token at cursor',
   'palette.openDiceLog': 'Open dice log',
   'palette.openLootRoller': 'Open loot roller',
   'palette.openSceneBrowser': 'Open scene browser',

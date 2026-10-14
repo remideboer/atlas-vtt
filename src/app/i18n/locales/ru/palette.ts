@@ -19,6 +19,7 @@ export const palette: Translation = {
   'palette.noResults': 'Ничего не найдено',
   'palette.noResultsHint': 'Попробуйте другой запрос',
   'palette.notePinTool': 'Пин заметки',
+  'palette.insertBlankToken': 'Вставить пустой токен под курсором',
   'palette.openDiceLog': 'Открыть журнал бросков',
   'palette.openLootRoller': 'Открыть генератор добычи',
   'palette.openSceneBrowser': 'Открыть список сцен',
