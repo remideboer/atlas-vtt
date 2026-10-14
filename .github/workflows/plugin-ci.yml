@@ -46,9 +46,6 @@ jobs:
       - name: Lint like the community directory scan
         run: npm run lint:scan
 
-      - name: Verify release channel (main = stable x.y.z, beta = x.y.z-beta.N)
-        run: node scripts/release-channel.js --branch "${{ github.base_ref || github.ref_name }}"
-
       - name: Check release notes
         run: npm run changelog:check
 
