@@ -43,7 +43,8 @@ export class FiveEToolsBestiary {
   static forApp(app: App): FiveEToolsBestiary {
     let instance = byApp.get(app);
     if (!instance) {
-      instance = new FiveEToolsBestiary(app, SettingsService.forApp(app), AssetService.getInstance(app));
+      const settings = SettingsService.forApp(app) ?? new SettingsService(app);
+      instance = new FiveEToolsBestiary(app, settings, AssetService.getInstance(app));
       byApp.set(app, instance);
     }
     return instance;
@@ -52,6 +53,12 @@ export class FiveEToolsBestiary {
   /** Absolute path from settings, or empty when unset. */
   configuredPath(): string {
     return this.settings.getSetting('fiveEToolsPath').trim();
+  }
+
+  /** Persists the 5e.tools root and drops the cached catalog. */
+  setConfiguredPath(path: string): void {
+    this.settings.setSetting('fiveEToolsPath', path);
+    this.invalidateCatalog();
   }
 
   /** Clears the in-memory catalog (e.g. after the settings path changes). */

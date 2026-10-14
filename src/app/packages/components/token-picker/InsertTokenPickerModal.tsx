@@ -10,7 +10,6 @@ import { monsterResources } from '../../../fiveETools/monsterResources';
 import type { FiveEMonster } from '../../../fiveETools/types';
 import { mapResources } from '../../../resources/collectionResources';
 import { AssetService, type TokenAsset as ServiceTokenAsset } from '../../../services/AssetService';
-import { SettingsService } from '../../../services/SettingsService';
 import { initiativeEntryForToken } from '../../../stores/initiativeEntries';
 import { playerWindowStore } from '../../../stores/playerWindowStore';
 import { insertBlankToken } from '../../../tools/insertBlankToken';
@@ -120,7 +119,7 @@ function noticeForFiveEFailure(error: unknown): string {
 }
 
 const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app, view, at, onClose }) => {
-  const settings = SettingsService.forApp(app);
+  const settings = view.serviceManager.getSettingsService();
   const savedPicker = settings.getSetting('insertTokenPicker');
   const [insertHidden, setInsertHidden] = useState(
     () => playersWatchingInsert(view),

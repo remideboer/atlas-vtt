@@ -10,7 +10,6 @@ import {
   FIVE_E_TOOLS_IMAGE_BASE,
   type FiveEMonster,
 } from '../../../fiveETools/types';
-import { SettingsService } from '../../../services/SettingsService';
 import { t } from '../../../i18n';
 import { Button } from '../primitives/button';
 
@@ -197,8 +196,7 @@ export function FiveEToolsPickerContent({
       return;
     }
     setPathDraft(trimmed);
-    SettingsService.forApp(app).setSetting('fiveEToolsPath', trimmed);
-    bestiary.invalidateCatalog();
+    bestiary.setConfiguredPath(trimmed);
     setPathRevision((n) => n + 1);
   };
 

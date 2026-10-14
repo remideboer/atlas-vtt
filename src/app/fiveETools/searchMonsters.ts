@@ -29,7 +29,10 @@ function parseFilters(query: string): SearchFilters {
       nameWords.push(raw.toLowerCase());
       continue;
     }
-    const [, key, op, valueRaw] = match;
+    const key = match[1];
+    const op = match[2];
+    const valueRaw = match[3];
+    if (key === undefined || op === undefined || valueRaw === undefined) continue;
     const value = valueRaw.trim().toLowerCase();
     if (!value) continue;
     const kind = key.toLowerCase();
@@ -54,8 +57,11 @@ function parseCrFilter(op: string, value: string): CrBound | null {
   }
   const range = /^(.+?)\s*-\s*(.+)$/.exec(value);
   if (range) {
-    const min = parseRating(range[1]);
-    const max = parseRating(range[2]);
+    const low = range[1];
+    const high = range[2];
+    if (low === undefined || high === undefined) return null;
+    const min = parseRating(low);
+    const max = parseRating(high);
     if (min === null || max === null) return null;
     return { min: Math.min(min, max), max: Math.max(min, max), exact: null };
   }
