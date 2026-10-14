@@ -6,6 +6,7 @@
 - The toolbar shows or hides the scene grid, without opening the command palette.
 - The Atlas dashboard opens from a home icon on the left ribbon.
 - The player view fills the area outside the map with a colour from the map's edge.
+- When the grid is on, the player view continues its lines into the area outside the map.
 
 ## Fixed
 

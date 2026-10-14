@@ -120,4 +120,26 @@ describe('the grid over a map image', () => {
     expect(() => map.show({ x: 0, y: 0, width: 10, height: 10 })).not.toThrow();
     expect(grid.getGridSprite()).toBeNull();
   });
+
+  it('keeps an off-map continuation hidden until a player frame asks for it', () => {
+    const map = fakeMapImageView(400, 300);
+    const { grid, viewport } = gridOver(map, { color: 0xff0000 });
+    const offMap = grid.getOffMapSprite()!;
+
+    expect(offMap.visible).toBe(false);
+    expect(viewport.children.indexOf(offMap)).toBe(viewport.children.indexOf(grid.getGridSprite()!) + 1);
+
+    grid.setOffMapGrid(true);
+    expect(offMap.visible).toBe(true);
+
+    const mask = offMap.mask as Graphics;
+    const bounds = mask.getLocalBounds();
+    // One map side of padding each way: 400×300 → pad 400 → 1200×1100 local.
+    expect({ width: bounds.width, height: bounds.height }).toEqual({ width: 1200, height: 1100 });
+
+    grid.setEnabled(false);
+    expect(offMap.visible).toBe(false);
+    grid.setOffMapGrid(true);
+    expect(offMap.visible).toBe(false);
+  });
 });

@@ -66,6 +66,14 @@ export const ALIGNMENT_GRID_COLOR = 0x00ff00;
 export class GridSystem implements UnlitGrid {
   /** Holds the grid lines and, on a numbered grid, the cell numbers. */
   private gridSprite: Container | null = null;
+  /**
+   * Continues the grid into the players' off-map margins. Never marked (UnlitGrid erase would
+   * punch holes in the edge-colour clear outside the lighting layer). Shown only while a player
+   * frame asks for it (`setOffMapGrid`).
+   */
+  private offMapSprite: Container | null = null;
+  /** Whether the next player frame should show the off-map continuation. */
+  private offMapWanted = false;
   private cellNumberLabels: CellNumberLabels | null = null;
   private readonly onViewportZoomed = (): void => {
     this.cellNumberLabels?.setView(this.numberView());
@@ -84,6 +92,8 @@ export class GridSystem implements UnlitGrid {
   private _updateDebounceTimer: number | null = null;
   private _gridSpriteInitialWorldX: number = 0;
   private _gridSpriteInitialWorldY: number = 0;
+  private _offMapSpriteInitialWorldX: number = 0;
+  private _offMapSpriteInitialWorldY: number = 0;
   private _gridOptionsOffsetXAtCreation: number = 0;
   private _gridOptionsOffsetYAtCreation: number = 0;
   private isDestroying: boolean = false;
@@ -153,6 +163,19 @@ export class GridSystem implements UnlitGrid {
 
     const { x: mapX, y: mapY, width: mapWidth, height: mapHeight } = mapRect;
     const hexLayout = this.getHexLayout();
+    const lineAlpha = isAligning ? Math.min(alpha! * 1.5, 1) : alpha!;
+    const markerArm = gridMarkerArmLength(size);
+    const makeLines = (bounds: GridBounds): GridLines => new GridLines({
+      lineType,
+      lineWidth: lineWidth!,
+      color: gridColor,
+      alpha: lineAlpha,
+      markerArm,
+      trace: (path, thickness, arm) => {
+        if (hexLayout) drawHexGrid(path, bounds, hexLayout, lineType, thickness, arm);
+        else drawSquareGrid(path, bounds, size, offsetX, offsetY, lineType, thickness, arm);
+      },
+    });
 
     // One cell of padding around the map; the mask clips the overflow.
     const padding = hexLayout ? Math.max(hexCellExtent(hexLayout).width, hexCellExtent(hexLayout).height) : size;
@@ -163,20 +186,8 @@ export class GridSystem implements UnlitGrid {
       maxY: mapY + mapHeight + padding,
     };
 
-    const lines = new GridLines({
-      lineType,
-      lineWidth: lineWidth!,
-      color: gridColor,
-      alpha: isAligning ? Math.min(alpha! * 1.5, 1) : alpha!,
-      markerArm: gridMarkerArmLength(size),
-      trace: (path, thickness, arm) => {
-        if (hexLayout) drawHexGrid(path, bounds, hexLayout, lineType, thickness, arm);
-        else drawSquareGrid(path, bounds, size, offsetX, offsetY, lineType, thickness, arm);
-      },
-    });
-
     const grid = new Container({ label: 'grid', eventMode: 'none', interactiveChildren: false });
-    grid.addChild(lines.graphics);
+    grid.addChild(makeLines(bounds).graphics);
     grid.position.set(bounds.minX, bounds.minY);
 
     const cellNumbers = this.options.cellNumbers;
@@ -217,16 +228,45 @@ export class GridSystem implements UnlitGrid {
     this._gridOptionsOffsetXAtCreation = offsetX;
     this._gridOptionsOffsetYAtCreation = offsetY;
 
+    // Off-map ring for the players' letterbox: one map side of padding covers ultrawide frames.
+    const marginPad = Math.max(mapWidth, mapHeight);
+    const marginBounds: GridBounds = {
+      minX: mapX - marginPad,
+      minY: mapY - marginPad,
+      maxX: mapX + mapWidth + marginPad,
+      maxY: mapY + mapHeight + marginPad,
+    };
+    const offMap = new Container({ label: 'grid-off-map', eventMode: 'none', interactiveChildren: false });
+    offMap.addChild(makeLines(marginBounds).graphics);
+    offMap.position.set(marginBounds.minX, marginBounds.minY);
+    const offMapMask = new Graphics();
+    offMapMask.rect(0, 0, marginBounds.maxX - marginBounds.minX, marginBounds.maxY - marginBounds.minY).fill(0xffffff);
+    if (outline) {
+      offMapMask.poly(outline.flatMap((corner) => [corner.x - marginBounds.minX, corner.y - marginBounds.minY])).cut();
+    } else {
+      offMapMask.rect(mapX - marginBounds.minX, mapY - marginBounds.minY, mapWidth, mapHeight).cut();
+    }
+    offMap.addChild(offMapMask);
+    offMap.mask = offMapMask;
+    offMap.visible = this.offMapWanted && this.options.enabled !== false;
+    this.offMapSprite = offMap;
+    this._offMapSpriteInitialWorldX = marginBounds.minX;
+    this._offMapSpriteInitialWorldY = marginBounds.minY;
+
     // Insert just above the map image
     const existingGrids = this.viewport.children.filter(child => gridSpriteIds.has(child));
     existingGrids.forEach(g => this.viewport.removeChild(g));
 
     const mapIndex = this.viewport.children.indexOf(this.map.layer);
-    this.viewport.addChildAt(grid, mapIndex >= 0 ? mapIndex + 1 : 0);
+    const insertAt = mapIndex >= 0 ? mapIndex + 1 : 0;
+    this.viewport.addChildAt(grid, insertAt);
+    this.viewport.addChildAt(offMap, insertAt + 1);
     gridSpriteIds.set(grid, Date.now());
+    gridSpriteIds.set(offMap, Date.now());
 
     if (this.layer) {
       this.layer.attach(grid);
+      this.layer.attach(offMap);
     }
 
     this.viewport.dirty = true;
@@ -282,36 +322,33 @@ export class GridSystem implements UnlitGrid {
   private destroyGridResources(): void {
     this.cellNumberLabels = null;
     this.markBacking = null;
-    if (!this.gridSprite) return;
+    this.releaseGridSprite(this.gridSprite);
+    this.gridSprite = null;
+    this.releaseGridSprite(this.offMapSprite);
+    this.offMapSprite = null;
+  }
 
-    this.gridSprite.visible = false;
-    this.gridSprite.renderable = false;
-
+  private releaseGridSprite(sprite: Container | null): void {
+    if (!sprite) return;
+    sprite.visible = false;
+    sprite.renderable = false;
     if (this.layer) {
       try {
-        this.layer.detach(this.gridSprite);
+        this.layer.detach(sprite);
       } catch {
         // Layer might already be destroyed
       }
     }
-
-    if (this.gridSprite.parent) {
+    if (sprite.parent) {
       try {
-        this.gridSprite.parent.removeChild(this.gridSprite);
+        sprite.parent.removeChild(sprite);
       } catch {
         // Parent might be in the middle of rendering
       }
     }
-
-    const spriteToDestroy = this.gridSprite;
-    this.gridSprite = null;
-
-    // Destroy after the current render cycle completes
     window.requestAnimationFrame(() => {
       try {
-        if (!spriteToDestroy.destroyed) {
-          destroyTree(spriteToDestroy);
-        }
+        if (!sprite.destroyed) destroyTree(sprite);
       } catch {
         // Silently ignore destruction errors
       }
@@ -328,13 +365,26 @@ export class GridSystem implements UnlitGrid {
     return this.marked && this.gridSprite?.visible ? this.drawnColor : null;
   }
 
+  /**
+   * Shows the off-map grid continuation for one players' frame. No-op while the grid is hidden;
+   * the GM canvas never shows it.
+   */
+  public setOffMapGrid(on: boolean): void {
+    this.offMapWanted = on;
+    if (this.offMapSprite) {
+      this.offMapSprite.visible = on && this.options.enabled !== false;
+      this.viewport.dirty = true;
+    }
+  }
+
   /** Toggle visibility */
   public setEnabled(enabled: boolean): void {
     this.options.enabled = enabled;
     if (enabled) {
       this.createGrid();
-    } else if (this.gridSprite) {
-      this.gridSprite.visible = false;
+    } else {
+      if (this.gridSprite) this.gridSprite.visible = false;
+      if (this.offMapSprite) this.offMapSprite.visible = false;
     }
   }
 
@@ -373,6 +423,11 @@ export class GridSystem implements UnlitGrid {
     return this.gridSprite;
   }
 
+  /** Off-map continuation for the players' frame; hidden on the GM canvas. */
+  public getOffMapSprite(): Container | null {
+    return this.offMapSprite;
+  }
+
   /** Completely destroy */
   public destroy(): void {
     this.isDestroying = true;
@@ -393,8 +448,9 @@ export class GridSystem implements UnlitGrid {
   /** Provide a render layer so the grid sprite can automatically be attached */
   public setRenderLayer(layer: RenderLayer | null): void {
     this.layer = layer;
-    if (this.gridSprite && layer) {
-      layer.attach(this.gridSprite);
+    if (layer) {
+      if (this.gridSprite) layer.attach(this.gridSprite);
+      if (this.offMapSprite) layer.attach(this.offMapSprite);
     }
   }
 
@@ -467,6 +523,10 @@ export class GridSystem implements UnlitGrid {
     this.gridSprite.position.set(
       this._gridSpriteInitialWorldX + deltaOptionsX,
       this._gridSpriteInitialWorldY + deltaOptionsY,
+    );
+    this.offMapSprite?.position.set(
+      this._offMapSpriteInitialWorldX + deltaOptionsX,
+      this._offMapSpriteInitialWorldY + deltaOptionsY,
     );
     this.viewport.dirty = true;
   }

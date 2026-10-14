@@ -832,9 +832,12 @@ export class PixiRendererOrchestrator { // Renamed class
     if (!frames.canRender()) return;
     // The map image at the players' own detail, put back before the DM's render
     const restoreMapImage = this.mapImage?.drawFor(frameView(frame));
+    // Off-map grid ring only for this capture; UnlitGrid erase must not punch the edge clear.
+    this.gridSystem?.setOffMapGrid(true);
     try {
       captureBeforeRender(this.playerFrameLayers(settings), () => frames.render(app.stage, frame), () => frames.copy(copy), frameCamera(viewport, frame));
     } finally {
+      this.gridSystem?.setOffMapGrid(false);
       restoreMapImage?.();
       if (!renderFollows) app.renderer.render(app.stage);
     }
