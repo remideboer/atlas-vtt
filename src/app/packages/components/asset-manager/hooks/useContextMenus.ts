@@ -84,6 +84,9 @@ export function useContextMenus({
     const entries = buildContentContextMenuEntries({
       sortBy: sel.sortBy, sortOptions: sel.sortOptions, setSortBy: sel.setSortBy,
       sortOrder: sel.sortOrder, setSortOrder: sel.setSortOrder,
+      handleCreateTokens: () => crud.setIsTokenCreatorOpen(true),
+      handleCreateMap: crud.handleCreateMap,
+      handleCreateCollection: crud.handleCreateCollection,
       handleCreateFolder: crud.handleCreateFolder,
       handleRefresh: crud.handleRefresh,
     });
