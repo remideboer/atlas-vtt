@@ -44,6 +44,7 @@ export const toolbar: Translation = {
   'toolbar.lasso': 'Лассо',
   'toolbar.rectangle': 'Прямоугольник',
   'toolbar.polygon': 'Многоугольник',
+  'toolbar.snapToGrid': 'Привязка к сетке',
   'toolbar.icons': 'Значки',
   'toolbar.drawWalls': 'Рисовать стены',
   'toolbar.pointToPoint': 'По точкам',

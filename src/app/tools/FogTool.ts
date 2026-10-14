@@ -9,6 +9,8 @@ export type FogToolMode = FogShapeMode;
 export interface FogSettings {
   brushSize: number;
   mode: FogToolMode;
+  /** Whether rectangle and polygon corners snap to the grid. */
+  snapToGrid: boolean;
 }
 
 /**
@@ -24,6 +26,7 @@ export class FogTool {
     this.settings = {
       brushSize: 50,
       mode: 'brush',
+      snapToGrid: false,
     };
   }
 
@@ -43,6 +46,15 @@ export class FogTool {
     if (this.settings.mode === mode) return;
     this.settings.mode = mode;
     this.eventBus.emit('fog-mode-changed', mode);
+  }
+
+  /**
+   * Whether rectangle and polygon corners snap to the grid.
+   */
+  public setSnapToGrid(snap: boolean): void {
+    if (this.settings.snapToGrid === snap) return;
+    this.settings.snapToGrid = snap;
+    this.eventBus.emit('fog-snap-changed', snap);
   }
 
   /**

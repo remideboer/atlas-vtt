@@ -17,6 +17,7 @@ interface FogToolHarness {
   stroke: ShapeStroke;
   polygon: FogPolygonDraft;
   fogShapeMode: FogShapeMode;
+  snapToGrid: boolean;
   setFogMode(mode: FogShapeMode): void;
   setupStoreSubscriptions(): void;
   onPointerDown(event: FederatedPointerEvent): void;
@@ -45,6 +46,7 @@ function fogTool(activeTool: 'fog' | 'eraser', mode: FogShapeMode): { tool: FogT
     stroke: Object.assign(new ShapeStroke(), { mode: mode === 'polygon' ? 'brush' : mode }),
     polygon: new FogPolygonDraft(),
     fogShapeMode: mode,
+    snapToGrid: false,
     _pixiApp: {},
     compositor: { composite: vi.fn() },
     updatePreviewTexture: vi.fn(),
@@ -85,7 +87,7 @@ describe('the fog tool\'s stroke', () => {
     }
   });
 
-  it('snaps only the rectangle to the grid: a lasso and a brush stroke go where the pointer went', () => {
+  it('leaves brush, lasso and rectangle free of the grid by default', () => {
     const lasso = fogTool('fog', 'lasso');
     lasso.tool.onPointerDown(at(33, 33));
     lasso.tool.onPointerMove(at(141, 37));
@@ -102,7 +104,16 @@ describe('the fog tool\'s stroke', () => {
     rectangle.tool.onPointerDown(at(33, 33));
     rectangle.tool.onPointerMove(at(141, 121));
     rectangle.tool.onPointerUp();
-    expect(rectangle.state.addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: true, x: 0, y: 0, width: 140, height: 140 });
+    expect(rectangle.state.addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: true, x: 33, y: 33, width: 108, height: 88 });
+  });
+
+  it('snaps rectangle corners to the grid when snap is on', () => {
+    const { tool, state } = fogTool('eraser', 'rectangle');
+    tool.snapToGrid = true;
+    tool.onPointerDown(at(33, 33));
+    tool.onPointerMove(at(141, 121));
+    tool.onPointerUp();
+    expect(state.addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: true, x: 0, y: 0, width: 140, height: 140 });
   });
 
   it('drops the stroke under way when the mode is switched: nothing is committed, and the brush\'s preview goes', () => {
@@ -164,7 +175,7 @@ describe('the fog tool\'s stroke', () => {
     expect(lasso.tool.cursorPreview.shown).toBe(false);
   });
 
-  it('commits a click-corner polygon as a lasso fill, snapped to the grid', () => {
+  it('commits a click-corner polygon as a lasso fill where the pointer went', () => {
     const { tool, state } = fogTool('fog', 'polygon');
     tool.onPointerDown(at(33, 33));
     tool.onPointerUp();
@@ -177,9 +188,23 @@ describe('the fog tool\'s stroke', () => {
     expect(state.addFogOperation).toHaveBeenCalledWith({
       type: 'lasso',
       isErasing: false,
-      points: [{ x: 0, y: 0 }, { x: 140, y: 70 }, { x: 70, y: 140 }],
+      points: [{ x: 33, y: 33 }, { x: 141, y: 37 }, { x: 40, y: 121 }],
     });
     expect(tool.polygon.active).toBe(false);
+  });
+
+  it('snaps polygon corners to the grid when snap is on', () => {
+    const { tool, state } = fogTool('fog', 'polygon');
+    tool.snapToGrid = true;
+    tool.onPointerDown(at(33, 33));
+    tool.onPointerDown(at(141, 37));
+    tool.onPointerDown(at(40, 121));
+    expect(tool.handleEnter()).toBe(true);
+    expect(state.addFogOperation).toHaveBeenCalledWith({
+      type: 'lasso',
+      isErasing: false,
+      points: [{ x: 0, y: 0 }, { x: 140, y: 70 }, { x: 70, y: 140 }],
+    });
   });
 
   it('Escape drops a polygon draft without committing', () => {

@@ -65,6 +65,8 @@ export class FogOfWarRenderer {
   private readonly stroke = new ShapeStroke();
   private readonly polygon = new FogPolygonDraft();
   private fogShapeMode: FogShapeMode = 'brush';
+  /** Rectangle and polygon corners snap to the grid when on (off by default). */
+  private snapToGrid = false;
   private isErasing = false;
   private readonly doubleClickHandler = (): void => {
     this.handleDoubleClick();
@@ -82,6 +84,7 @@ export class FogOfWarRenderer {
   private fogClearAllHandler: () => void;
   private fogCoverMapHandler: () => void;
   private fogModeChangedHandler: (mode: FogShapeMode) => void;
+  private fogSnapChangedHandler: (snap: boolean) => void;
   private readonly mapImageUpdatedHandler = (): void => {
     if (!this.store.getState().isMapLoading) {
       this.refreshBounds();
@@ -152,6 +155,9 @@ export class FogOfWarRenderer {
     this.fogClearAllHandler = () => this.clearAllFog();
     this.fogCoverMapHandler = () => this.coverMap();
     this.fogModeChangedHandler = (mode: FogShapeMode) => this.setFogMode(mode);
+    this.fogSnapChangedHandler = (snap: boolean) => {
+      this.snapToGrid = snap;
+    };
 
     // ── Event listeners ─────────────────────────────────────────────
     this.setupEventListeners();
@@ -303,6 +309,7 @@ export class FogOfWarRenderer {
     this.eventBus.off('fog-clear-all', this.fogClearAllHandler);
     this.eventBus.off('fog-cover-map', this.fogCoverMapHandler);
     this.eventBus.off('fog-mode-changed', this.fogModeChangedHandler);
+    this.eventBus.off('fog-snap-changed', this.fogSnapChangedHandler);
     this.eventBus.off('map-image-updated', this.mapImageUpdatedHandler);
 
     this.cursorPreview.destroy();
@@ -402,6 +409,7 @@ export class FogOfWarRenderer {
     this.eventBus.on('fog-clear-all', this.fogClearAllHandler);
     this.eventBus.on('fog-cover-map', this.fogCoverMapHandler);
     this.eventBus.on('fog-mode-changed', this.fogModeChangedHandler);
+    this.eventBus.on('fog-snap-changed', this.fogSnapChangedHandler);
     this.eventBus.on('map-image-updated', this.mapImageUpdatedHandler);
   }
 
@@ -787,15 +795,16 @@ export class FogOfWarRenderer {
     else this.previewPolygon();
   }
 
-  /** Where the pointer is on the map; a rectangle's and polygon's corners snap to the grid's. */
+  /** Where the pointer is on the map; rectangle corners snap when snap-to-grid is on. */
   private strokePoint(event: PIXI.FederatedPointerEvent): { x: number; y: number } {
     const { x, y } = this.viewport.toWorld(event.global);
-    return this.stroke.mode === 'rectangle' ? this.snapToGridCorner(x, y) : { x, y };
+    return this.stroke.mode === 'rectangle' && this.snapToGrid ? this.snapToGridCorner(x, y) : { x, y };
   }
 
+  /** Polygon corners snap when snap-to-grid is on. */
   private polygonPoint(event: PIXI.FederatedPointerEvent): Point {
     const { x, y } = this.viewport.toWorld(event.global);
-    return this.snapToGridCorner(x, y);
+    return this.snapToGrid ? this.snapToGridCorner(x, y) : { x, y };
   }
 
   private snapToGridCorner(x: number, y: number): { x: number; y: number } {

@@ -43,6 +43,7 @@ export const toolbar = {
   'toolbar.lasso': 'Lasso',
   'toolbar.rectangle': 'Rectangle',
   'toolbar.polygon': 'Polygon',
+  'toolbar.snapToGrid': 'Snap to grid',
   'toolbar.icons': 'Icons',
   'toolbar.drawWalls': 'Draw walls',
   'toolbar.pointToPoint': 'Point to point',

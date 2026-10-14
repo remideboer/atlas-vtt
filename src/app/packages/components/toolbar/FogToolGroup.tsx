@@ -6,6 +6,7 @@ import type { FogShapeMode } from "../../../tools/FogTool"
 import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
 import { DropdownModeSelector } from "../primitives/DropdownModeSelector"
 import { DropdownSliderRow } from "../primitives/DropdownSliderRow"
+import { DropdownToggleRow } from "../primitives/DropdownToggleRow"
 import { ToolGroup, type ToolGroupControls } from "./ToolGroup"
 import { fogToolFace } from "./toolFaces"
 import { useEmitViewEvent } from "./useEmitViewEvent"
@@ -18,11 +19,13 @@ export function FogToolGroup({ activeTool, selectTool, menuOpen, toggleMenu, clo
   const emit = useEmitViewEvent()
   const [fogMode, setFogMode] = useState<FogShapeMode>('brush')
   const [brushSize, setBrushSize] = useState(50)
+  const [snapToGrid, setSnapToGrid] = useState(false)
   const face = fogToolFace(activeTool)
 
-  // The fog renderer starts in brush mode, like this menu.
+  // The fog renderer starts in brush mode with snap off, like this menu.
   useEffect(() => {
     emit('fog-mode-changed', 'brush');
+    emit('fog-snap-changed', false);
   }, [emit]);
 
   return (
@@ -79,6 +82,16 @@ export function FogToolGroup({ activeTool, selectTool, menuOpen, toggleMenu, clo
               }}
             />
           )}
+
+          <DropdownToggleRow
+            label={t('toolbar.snapToGrid')}
+            value={snapToGrid}
+            onChange={() => {
+              const next = !snapToGrid;
+              setSnapToGrid(next);
+              emit('fog-snap-changed', next);
+            }}
+          />
         </div>
       </div>
 
