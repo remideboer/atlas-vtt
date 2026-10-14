@@ -7,7 +7,9 @@ import { AssetService, type TokenAsset as ServiceTokenAsset } from '../../../ser
 import { insertBlankToken } from '../../../tools/insertBlankToken';
 import { ATLAS_NATIVE_MODAL_CLASSES } from '../../../ui/nativeModal';
 import { t } from '../../../i18n';
+import { Button } from '../primitives/button';
 import { ToggleSwitch } from '../primitives/Toggle';
+import { TokenCreatorModal } from '../asset-manager/token-creator/TokenCreatorModal';
 import { spawnTokenAsset, type SpawnContext } from '../asset-manager/utils/tokenSpawnService';
 import type { TokenAsset as SpawnTokenAsset } from '../asset-manager/types';
 import { TokenLibraryPickerContent, type PickableLibraryToken } from './TokenLibraryPickerContent';
@@ -108,23 +110,37 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
       });
   };
 
+  const openCreateToken = (): void => {
+    const assets = AssetService.getInstance(app);
+    const mapPath = view.getStore().getState().mapPath;
+    const selectedCollection =
+      (mapPath ? assets.getCollectionForMap(mapPath) : null) ?? AssetService.defaultCollectionId();
+    // Keep the insert picker open; save triggers atlas-vtt:refresh-assets and the grid reloads.
+    new TokenCreatorModal(app, { selectedCollection, initialSource: 'images' }).open();
+  };
+
   return (
     <div className="token-picker-insert">
-      <div className="token-picker-insert-option">
-        <div className="token-picker-insert-option__text">
-          <span id={hiddenLabelId} className="token-picker-insert-option__label">
-            {t('picker.insert.hidden')}
-          </span>
-          <span id={hiddenHintId} className="token-picker-insert-option__hint">
-            {t('picker.insert.hiddenHint')}
-          </span>
+      <div className="token-picker-insert-toolbar">
+        <Button variant="outline" size="sm" onClick={openCreateToken}>
+          {t('picker.insert.createToken')}
+        </Button>
+        <div className="token-picker-insert-option">
+          <div className="token-picker-insert-option__text">
+            <span id={hiddenLabelId} className="token-picker-insert-option__label">
+              {t('picker.insert.hidden')}
+            </span>
+            <span id={hiddenHintId} className="token-picker-insert-option__hint">
+              {t('picker.insert.hiddenHint')}
+            </span>
+          </div>
+          <ToggleSwitch
+            labelledBy={hiddenLabelId}
+            aria-describedby={hiddenHintId}
+            value={insertHidden}
+            onChange={() => setInsertHidden((current) => !current)}
+          />
         </div>
-        <ToggleSwitch
-          labelledBy={hiddenLabelId}
-          aria-describedby={hiddenHintId}
-          value={insertHidden}
-          onChange={() => setInsertHidden((current) => !current)}
-        />
       </div>
       <TokenLibraryPickerContent
         app={app}

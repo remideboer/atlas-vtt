@@ -230,3 +230,8 @@
   padding: 0;
   .modal-close-button { display: none; }
 }
+
+// Above Atlas React overlays and the insert-token picker ($z-atlas-modal).
+.modal-container.token-picker-modal-layer {
+  z-index: $z-atlas-modal + 1;
+}

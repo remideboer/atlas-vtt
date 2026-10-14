@@ -25,6 +25,7 @@ export const picker = {
   'picker.insert.blank': 'Blank token',
   'picker.insert.hidden': 'Insert hidden from players',
   'picker.insert.hiddenHint': 'Players do not see this token on the map or in initiative',
+  'picker.insert.createToken': 'Create token…',
   'picker.editArt.title': 'Choose token art',
   'picker.editArt.failed': 'Failed to load token art picker',
   'picker.editArt.select': 'Select art for this token:',
