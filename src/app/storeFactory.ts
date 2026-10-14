@@ -166,6 +166,8 @@ export interface ViewAtlasState extends ViewState {
   deleteAudio: (id: string) => void;
   setActiveTool: (tool: ViewAtlasState['activeTool']) => void;
   setSelectionMode: (mode: ViewAtlasState['selectionMode']) => void;
+  /** Copies the GM's snap-on-move setting onto this view. Not an undo step and not saved. */
+  setSnapTokenMoves: (snap: boolean) => void;
   setSelection: (ids: string[]) => void;
   clearSelection: () => void;
   moveTokensBulk: (ids: string[], dx: number, dy: number) => void;
@@ -462,6 +464,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           selectedIds: [],
           activeTool: 'move',
           selectionMode: 'box' as const,
+          snapTokenMoves: false,
           isDragging: false,
           
           // Collection management (not persisted)
@@ -694,6 +697,10 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
 
           setSelectionMode: (mode) => set((draft) => {
             draft.selectionMode = mode;
+          }),
+
+          setSnapTokenMoves: (snap) => set((draft) => {
+            draft.snapTokenMoves = snap;
           }),
 
           setSelection: (ids) => set((draft) => {

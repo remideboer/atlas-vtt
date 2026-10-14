@@ -13,7 +13,7 @@ export const grid: Translation = {
   'grid.numbers.sequential': 'По порядку (1, 2, 3)',
   'grid.show': 'Показывать сетку',
   'grid.snap': 'Привязка к сетке',
-  'grid.snapHint': 'Токены, пины и измерения встают в центры клеток',
+  'grid.snapHint': 'Пины и измерения встают в центры клеток',
   'grid.type': 'Тип сетки',
   'grid.type.hexFlat': 'Гексы (плоские)',
   'grid.type.hexPointy': 'Гексы (острые)',

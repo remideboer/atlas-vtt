@@ -261,6 +261,17 @@ export class SettingsService {
     return this.settings.toolbar;
   }
 
+  /** Whether dragging a token settles it on a cell. Off unless the file says `true`. */
+  snapsTokenMoves(): boolean {
+    return this.settings.snapTokenMoves === true;
+  }
+
+  setSnapTokenMoves(snap: boolean): void {
+    if (this.snapsTokenMoves() === snap) return;
+    this.settings.snapTokenMoves = snap;
+    this.commit();
+  }
+
   /** Stores a layout already in stored form (see `storedToolbarLayout`); an unchanged layout writes nothing. */
   setToolbarLayout(next: StoredToolbarLayout): void {
     const read = readToolbarLayout(next);

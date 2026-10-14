@@ -45,6 +45,11 @@ export interface AtlasSettings {
   /** The GM's toolbar layout, only what differs from the default; read with `getToolbarLayout`. */
   toolbar: StoredToolbarLayout;
   /**
+   * Whether a dragged token settles on a cell. Off until the GM turns it on; pins,
+   * measurements and placing a token keep the scene's own `grid.snapToGrid`.
+   */
+  snapTokenMoves: boolean;
+  /**
    * Absolute path to a local 5e.tools checkout (the folder that contains `data/`).
    * Empty disables bestiary insert from 5e.tools.
    */
@@ -84,6 +89,7 @@ export const DEFAULT_SETTINGS: AtlasSettings = {
   experimental: {},
   statblockPane: { hintDismissed: false },
   toolbar: {},
+  snapTokenMoves: false,
   fiveEToolsPath: '',
   insertTokenPicker: {
     lastSource: 'library',

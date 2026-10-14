@@ -76,6 +76,8 @@ export interface ViewState extends ViewUIState {
   // Tool and selection state
   activeTool: 'move' | 'select' | 'fog' | 'text' | 'measure' | 'measure-circle' | 'measure-cone' | 'eraser' | 'asset' | 'note-pin' | 'laser-pointer' | 'draw-pen' | 'draw-eraser' | 'draw-icon' | 'draw-line' | 'draw-rectangle' | 'draw-circle' | 'wall' | 'audio';
   selectionMode: 'box' | 'lasso';
+  /** The GM's `snapTokenMoves` setting, copied here so a drag can read it. Not saved with the scene. */
+  snapTokenMoves: boolean;
   selectedIds: string[];
 
   // Drag state

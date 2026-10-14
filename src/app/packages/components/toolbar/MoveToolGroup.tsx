@@ -2,7 +2,7 @@ import { t } from '../../../i18n';
 import React from "react"
 import { Flashlight, Hand } from "lucide-react"
 import { useAtlasStore } from "src/app/react/ViewStoreContext"
-import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
+import { useAtlasSettings, useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
 import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
 import { DropdownToggleRow } from "../primitives/DropdownToggleRow"
 import { LaserPointerOptions } from "../LaserPointerOptions"
@@ -12,8 +12,12 @@ import { moveToolFace } from "./toolFaces"
 /** Move/Select and the laser pointer, with the selection mode and laser options. */
 export function MoveToolGroup({ activeTool, selectTool, menuOpen, toggleMenu }: ToolGroupControls): React.ReactElement {
   const hotkeyLabel = useHotkeyLabels()
+  const settings = useAtlasSettings()
+  const isPlayerView = useAtlasStore(state => state.isPlayerView)
   const selectionMode = useAtlasStore(state => state.selectionMode)
   const setSelectionMode = useAtlasStore(state => state.setSelectionMode)
+  const snapTokenMoves = useAtlasStore(state => state.snapTokenMoves)
+  const setSnapTokenMoves = useAtlasStore(state => state.setSnapTokenMoves)
   const face = moveToolFace(activeTool)
 
   return (
@@ -48,6 +52,17 @@ export function MoveToolGroup({ activeTool, selectTool, menuOpen, toggleMenu }: 
           value={selectionMode === 'lasso'}
           onChange={() => setSelectionMode(selectionMode === 'box' ? 'lasso' : 'box')}
         />
+        {!isPlayerView && (
+          <DropdownToggleRow
+            label={t('toolbar.snapToGrid')}
+            value={snapTokenMoves}
+            onChange={() => {
+              const next = !snapTokenMoves;
+              settings?.setSnapTokenMoves(next);
+              setSnapTokenMoves(next);
+            }}
+          />
+        )}
       </div>
 
       <LaserPointerOptions />

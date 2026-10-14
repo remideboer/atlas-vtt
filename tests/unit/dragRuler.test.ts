@@ -8,13 +8,13 @@ import type { ViewAtlasState } from '../../src/app/storeFactory';
 const CELL = 70;
 const center = (col: number, row: number): { x: number; y: number } => ({ x: CELL / 2 + col * CELL, y: CELL / 2 + row * CELL });
 
-function makeRuler(token: { isHidden?: boolean } = {}): { ruler: DragRuler; view: { draw: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn>; layers: object[] } } {
+function makeRuler(token: { isHidden?: boolean } = {}, snapTokenMoves = true): { ruler: DragRuler; view: { draw: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn>; layers: object[] } } {
   const view = { draw: vi.fn(), clear: vi.fn(), destroy: vi.fn(), layers: [{ visible: true }, { visible: true }] };
   const gridSystem = {
     getOptions: () => ({ type: 'square', size: CELL, offsetX: 0, offsetY: 0 }),
     snapTokenCenter: (x: number, y: number) => center(Math.floor(x / CELL), Math.floor(y / CELL)),
   };
-  const state = { grid: { snapToGrid: true }, objects: { tokens: { t1: { id: 't1', size: 1, ...token } } } };
+  const state = { snapTokenMoves, grid: { snapToGrid: true }, objects: { tokens: { t1: { id: 't1', size: 1, ...token } } } };
   const settings: MeasurementSettings = { mode: 'metric', unitType: 'feet', unitDistance: 5, diagonalRule: 'equidistant', rangeBands: [] };
   const ruler = new DragRuler(
     view as unknown as DragRulerView,
@@ -37,6 +37,16 @@ describe('DragRuler', () => {
     ruler.begin('t1', { x: 40, y: 30 });
     ruler.update({ x: 3 * CELL + 50, y: 20 });
     expect(view.draw).toHaveBeenLastCalledWith([center(0, 0), center(3, 0)], '15ft');
+    ruler.end();
+  });
+
+  it('follows the pointer while snap is off, even when the scene snaps other things', () => {
+    const { ruler, view } = makeRuler({}, false);
+    const start = { x: 40, y: 30 };
+    const end = { x: 3 * CELL + 50, y: 20 };
+    ruler.begin('t1', start);
+    ruler.update(end);
+    expect(view.draw).toHaveBeenLastCalledWith([start, end], '15.7ft');
     ruler.end();
   });
 

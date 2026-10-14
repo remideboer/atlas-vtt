@@ -13,7 +13,7 @@ export const grid = {
   'grid.numbers.sequential': 'Sequential (1, 2, 3)',
   'grid.show': 'Show grid',
   'grid.snap': 'Snap to grid',
-  'grid.snapHint': 'Tokens, pins and measurements settle on cell centres',
+  'grid.snapHint': 'Pins and measurements settle on cell centres',
   'grid.type': 'Grid type',
   'grid.type.hexFlat': 'Hex (Flat)',
   'grid.type.hexPointy': 'Hex (Pointy)',

@@ -118,7 +118,7 @@ export class DragRuler {
   }
 
   private snapsToGrid(): boolean {
-    return this.store.getState().grid?.snapToGrid ?? true;
+    return this.store.getState().snapTokenMoves;
   }
 
   private tokenSize(): number {

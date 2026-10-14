@@ -42,6 +42,7 @@ export class ServiceManager {
   private diceToastObserver: DiceToastObserver;
   private viewId: string;
   private sceneThumbnails: SceneThumbnailUpdater;
+  private readonly unsubscribeSnapTokenMoves: () => void;
   
   constructor(private app: App, private store: ViewAtlasStore, private plugin?: AtlasVTTPlugin, viewId?: string) {
     // Create event bus for inter-service communication
@@ -54,6 +55,8 @@ export class ServiceManager {
     // Share the plugin-wide settings service so every view sees the same settings. A second
     // instance would take over SettingsService.forApp and save stale values over the file.
     this.settingsService = plugin?.settingsService ?? SettingsService.forApp(app) ?? new SettingsService(app);
+    this.mirrorSnapTokenMoves();
+    this.unsubscribeSnapTokenMoves = this.settingsService.onChange(() => this.mirrorSnapTokenMoves());
 
     // Initialize all services with the view store
     this.rendererService = new RendererService(app, this.eventBus, store, this.viewId, this.settingsService);
@@ -230,11 +233,19 @@ export class ServiceManager {
     this.widgetSyncService?.closeView(this.viewId);
   }
 
+  /** The GM's snap-on-move choice, so a drag reads the store instead of the settings file. */
+  private mirrorSnapTokenMoves(): void {
+    const snap = this.settingsService.snapsTokenMoves();
+    if (this.store.getState().snapTokenMoves === snap) return;
+    this.store.getState().setSnapTokenMoves(snap);
+  }
+
   /**
    * Cleanup all services
    * This should be called when the view is closed
    */
   public destroy(): void {
+    this.unsubscribeSnapTokenMoves();
     // Unregister from widget sync
     if (this.widgetSyncService) {
       this.widgetSyncService.unregisterStore(this.viewId);
