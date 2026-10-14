@@ -956,7 +956,7 @@ export class PixiRendererOrchestrator { // Renamed class
       const settings = SettingsService.forApp(this.obsApp);
       // Escape key
       if (matchesMapHotkey(e, 'cancel', settings)) {
-        if (this.lighting?.handleEscape()) {
+        if (this.lighting?.handleEscape() || this.fogRenderer?.handleEscape()) {
           e.preventDefault();
           return;
         }
@@ -969,8 +969,8 @@ export class PixiRendererOrchestrator { // Renamed class
         }
       }
       
-      // Enter closes the light zone being drawn
-      if (e.key === 'Enter' && this.lighting?.handleEnter()) {
+      // Enter closes a light zone or fog polygon being drawn
+      if (e.key === 'Enter' && (this.lighting?.handleEnter() || this.fogRenderer?.handleEnter())) {
         e.preventDefault();
         return;
       }

@@ -1,6 +1,10 @@
 import { EventEmitter } from 'events';
+import type { StrokeMode } from './shapeStroke';
 
-export type FogToolMode = 'brush' | 'lasso' | 'rectangle';
+/** Fog shape modes: drag strokes plus click-to-place polygon. */
+export type FogShapeMode = StrokeMode | 'polygon';
+
+export type FogToolMode = FogShapeMode;
 
 export interface FogSettings {
   brushSize: number;
@@ -33,7 +37,7 @@ export class FogTool {
   }
 
   /**
-   * Switch between brush, lasso, and rectangle fog modes.
+   * Switch between brush, lasso, rectangle, and polygon fog modes.
    */
   public setMode(mode: FogToolMode): void {
     if (this.settings.mode === mode) return;
@@ -61,4 +65,4 @@ export class FogTool {
   public getSettings(): FogSettings {
     return { ...this.settings };
   }
-} 
+}

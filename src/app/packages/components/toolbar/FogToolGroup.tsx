@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react"
-import { Cloud, CloudFog, Eraser, Lasso, Paintbrush, Square, Trash2 } from "lucide-react"
+import { Cloud, CloudFog, Eraser, Lasso, Paintbrush, Pentagon, Square, Trash2 } from "lucide-react"
 import { useAtlasUI } from "src/app/react/root/AtlasUIContext"
 import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
+import type { FogShapeMode } from "../../../tools/FogTool"
 import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
 import { DropdownModeSelector } from "../primitives/DropdownModeSelector"
 import { DropdownSliderRow } from "../primitives/DropdownSliderRow"
@@ -10,14 +11,12 @@ import { fogToolFace } from "./toolFaces"
 import { useEmitViewEvent } from "./useEmitViewEvent"
 import { t } from '../../../i18n'
 
-type FogMode = 'brush' | 'lasso' | 'rectangle'
-
 /** Fog and fog eraser, with the brush shape and size. DM only. */
 export function FogToolGroup({ activeTool, selectTool, menuOpen, toggleMenu, closeMenu }: ToolGroupControls): React.ReactElement {
   const hotkeyLabel = useHotkeyLabels()
   const { view } = useAtlasUI()
   const emit = useEmitViewEvent()
-  const [fogMode, setFogMode] = useState<FogMode>('brush')
+  const [fogMode, setFogMode] = useState<FogShapeMode>('brush')
   const [brushSize, setBrushSize] = useState(50)
   const face = fogToolFace(activeTool)
 
@@ -60,6 +59,7 @@ export function FogToolGroup({ activeTool, selectTool, menuOpen, toggleMenu, clo
               { value: 'brush' as const, icon: Paintbrush, label: t('toolbar.brush') },
               { value: 'lasso' as const, icon: Lasso, label: t('toolbar.lasso') },
               { value: 'rectangle' as const, icon: Square, label: t('toolbar.rectangle') },
+              { value: 'polygon' as const, icon: Pentagon, label: t('toolbar.polygon') },
             ]}
             onChange={(mode) => {
               setFogMode(mode);
@@ -67,16 +67,18 @@ export function FogToolGroup({ activeTool, selectTool, menuOpen, toggleMenu, clo
             }}
           />
 
-          <DropdownSliderRow
-            label={t('toolbar.brushSize')}
-            value={brushSize}
-            min={10}
-            max={200}
-            onChange={(size) => {
-              setBrushSize(size);
-              view?.setFogBrushSize(size);
-            }}
-          />
+          {fogMode === 'brush' && (
+            <DropdownSliderRow
+              label={t('toolbar.brushSize')}
+              value={brushSize}
+              min={10}
+              max={200}
+              onChange={(size) => {
+                setBrushSize(size);
+                view?.setFogBrushSize(size);
+              }}
+            />
+          )}
         </div>
       </div>
 

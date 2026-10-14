@@ -24,9 +24,12 @@ import { destroyTree } from '../utils/destroyTree';
 import { requestRender } from '../RenderScheduler';
 import { isHandled } from '../utils/handledEvents';
 import { openContextMenuGlobal } from '../../react/root/ContextMenuContext';
-import { STROKE_COLORS, ShapeStroke, type StrokeMode } from '../../tools/shapeStroke';
+import type { FogShapeMode } from '../../tools/FogTool';
+import { FogPolygonDraft } from '../../tools/fogPolygonDraft';
+import { STROKE_COLORS, ShapeStroke } from '../../tools/shapeStroke';
 import { drawStrokeArea } from '../utils/strokePreview';
 import { t } from '../../i18n';
+import type { Point } from '../../types/visionTypes';
 
 const DEFAULT_BOUNDS: FogBounds = { x: -2000, y: -2000, width: 4000, height: 4000 };
 const BOUNDS_PADDING = 200;
@@ -58,9 +61,14 @@ export class FogOfWarRenderer {
   private compositor: FogCanvasCompositor;
   private cursorPreview: FogCursorPreview;
 
-  // Drawing state: the stroke under way, with the brush, lasso or rectangle
+  // Drawing state: drag stroke (brush / lasso / rectangle) or click-corner polygon
   private readonly stroke = new ShapeStroke();
+  private readonly polygon = new FogPolygonDraft();
+  private fogShapeMode: FogShapeMode = 'brush';
   private isErasing = false;
+  private readonly doubleClickHandler = (): void => {
+    this.handleDoubleClick();
+  };
 
   // Store subscriptions
   private unsubscribe?: () => void;
@@ -73,7 +81,7 @@ export class FogOfWarRenderer {
   private fogBrushSizeChangedHandler: (size: number) => void;
   private fogClearAllHandler: () => void;
   private fogCoverMapHandler: () => void;
-  private fogModeChangedHandler: (mode: StrokeMode) => void;
+  private fogModeChangedHandler: (mode: FogShapeMode) => void;
   private readonly mapImageUpdatedHandler = (): void => {
     if (!this.store.getState().isMapLoading) {
       this.refreshBounds();
@@ -143,7 +151,7 @@ export class FogOfWarRenderer {
     this.fogBrushSizeChangedHandler = (size: number) => this.setBrushSize(size);
     this.fogClearAllHandler = () => this.clearAllFog();
     this.fogCoverMapHandler = () => this.coverMap();
-    this.fogModeChangedHandler = (mode: StrokeMode) => this.setFogMode(mode);
+    this.fogModeChangedHandler = (mode: FogShapeMode) => this.setFogMode(mode);
 
     // ── Event listeners ─────────────────────────────────────────────
     this.setupEventListeners();
@@ -251,7 +259,7 @@ export class FogOfWarRenderer {
     this.renderPreviewFromStore();
     this.previewSprite.visible = true;
 
-    if (this.stroke.mode === 'brush') {
+    if (this.fogShapeMode === 'brush') {
       this.cursorPreview.show(this.isErasing);
     }
   }
@@ -289,6 +297,7 @@ export class FogOfWarRenderer {
     this.viewport.off('pointerup', this.pointerUpHandler);
     this.viewport.off('pointerupoutside', this.pointerUpHandler);
     this._pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeaveHandler);
+    this._pixiApp.canvas.removeEventListener('dblclick', this.doubleClickHandler);
 
     this.eventBus.off('fog-brush-size-changed', this.fogBrushSizeChangedHandler);
     this.eventBus.off('fog-clear-all', this.fogClearAllHandler);
@@ -336,14 +345,15 @@ export class FogOfWarRenderer {
     this.cursorPreview.setBrushRadius(size);
   }
 
-  setFogMode(mode: StrokeMode): void {
-    const wasActive = this.stroke.active;
+  setFogMode(mode: FogShapeMode): void {
+    const wasActive = this.stroke.active || this.polygon.active;
     this.resetDrawingState();
     if (wasActive && !this.store.getState().isMapLoading) {
       this.refreshBounds();
       this.rebuildFogSprites();
     }
-    this.stroke.mode = mode;
+    this.fogShapeMode = mode;
+    if (mode !== 'polygon') this.stroke.mode = mode;
 
     const tool = this.store.getState().activeTool;
     const isFogActive = tool === 'fog' || tool === 'eraser';
@@ -352,6 +362,28 @@ export class FogOfWarRenderer {
     } else {
       this.cursorPreview.hide();
     }
+  }
+
+  /** Escape drops a polygon draft under way. */
+  handleEscape(): boolean {
+    if (!this.polygon.active) return false;
+    this.polygon.cancel();
+    this.clearPreviewGraphics();
+    requestRender(this._pixiApp);
+    return true;
+  }
+
+  /** Enter closes a polygon draft when it is an area. */
+  handleEnter(): boolean {
+    if (this.fogShapeMode !== 'polygon' || !this.polygon.active) return false;
+    this.commitPolygonIfReady();
+    return true;
+  }
+
+  /** Double-click closes a polygon draft when it is an area. */
+  handleDoubleClick(): void {
+    if (this.fogShapeMode !== 'polygon' || !this.polygon.active) return;
+    this.commitPolygonIfReady();
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -364,6 +396,7 @@ export class FogOfWarRenderer {
     this.viewport.on('pointerup', this.pointerUpHandler);
     this.viewport.on('pointerupoutside', this.pointerUpHandler);
     this._pixiApp.canvas.addEventListener('pointerleave', this.pointerLeaveHandler);
+    this._pixiApp.canvas.addEventListener('dblclick', this.doubleClickHandler);
 
     this.eventBus.on('fog-brush-size-changed', this.fogBrushSizeChangedHandler);
     this.eventBus.on('fog-clear-all', this.fogClearAllHandler);
@@ -406,7 +439,7 @@ export class FogOfWarRenderer {
       // and during map loading (the isMapLoading→false handler rebuilds instead)
       if (state.objects?.fog !== prevFog || mapChanged) {
         prevFog = state.objects?.fog;
-        if (!this.stroke.active && !state.isMapLoading) {
+        if (!this.stroke.active && !this.polygon.active && !state.isMapLoading) {
           this.refreshBounds();
           this.rebuildFogSprites();
         }
@@ -734,14 +767,35 @@ export class FogOfWarRenderer {
     if (isHandled(event)) return;
 
     this.previewSprite.visible = true;
+    if (this.fogShapeMode === 'polygon') {
+      this.onPolygonPointerDown(event);
+      return;
+    }
     this.stroke.begin(this.strokePoint(event));
     this.previewStroke();
   }
 
-  /** Where the pointer is on the map; a rectangle's corners snap to the grid's. */
+  private onPolygonPointerDown(event: PIXI.FederatedPointerEvent): void {
+    const point = this.polygonPoint(event);
+    const zoom = this.viewport.scale.x;
+    if (this.polygon.closesOn(point, zoom)) {
+      this.commitPolygonIfReady();
+      return;
+    }
+    this.polygon.place(point);
+    if (this.polygon.atCornerCap()) this.commitPolygonIfReady();
+    else this.previewPolygon();
+  }
+
+  /** Where the pointer is on the map; a rectangle's and polygon's corners snap to the grid's. */
   private strokePoint(event: PIXI.FederatedPointerEvent): { x: number; y: number } {
     const { x, y } = this.viewport.toWorld(event.global);
     return this.stroke.mode === 'rectangle' ? this.snapToGridCorner(x, y) : { x, y };
+  }
+
+  private polygonPoint(event: PIXI.FederatedPointerEvent): Point {
+    const { x, y } = this.viewport.toWorld(event.global);
+    return this.snapToGridCorner(x, y);
   }
 
   private snapToGridCorner(x: number, y: number): { x: number; y: number } {
@@ -757,11 +811,18 @@ export class FogOfWarRenderer {
   private onPointerMove(event: PIXI.FederatedPointerEvent): void {
     const tool = this.store.getState().activeTool;
 
-    if (this.stroke.mode === 'brush' && (tool === 'fog' || tool === 'eraser')) {
+    if (this.fogShapeMode === 'brush' && (tool === 'fog' || tool === 'eraser')) {
       const worldPos = this.viewport.toWorld(event.global);
       this.cursorPreview.updatePosition(worldPos.x, worldPos.y);
       // Back on the map after the pointer had left it.
       if (!this.cursorPreview.shown) this.cursorPreview.show(tool === 'eraser');
+    }
+
+    if (this.fogShapeMode === 'polygon') {
+      if (!this.polygon.active) return;
+      this.polygon.moveCursor(this.polygonPoint(event));
+      this.previewPolygon();
+      return;
     }
 
     if (!this.stroke.active) return;
@@ -775,6 +836,8 @@ export class FogOfWarRenderer {
   }
 
   private onPointerUp(): void {
+    // Polygon commits on close (click / Enter / double-click), not on release.
+    if (this.fogShapeMode === 'polygon') return;
     if (!this.stroke.active) return;
     const shape = this.stroke.finish();
     this.clearPreviewGraphics();
@@ -783,6 +846,20 @@ export class FogOfWarRenderer {
       this.refreshBounds();
       this.rebuildFogSprites();
     }
+  }
+
+  private commitPolygonIfReady(): void {
+    const points = this.polygon.finish();
+    this.clearPreviewGraphics();
+    if (!points) {
+      this.previewPolygon();
+      return;
+    }
+    this.store.getState().addFogOperation({
+      type: 'lasso',
+      points,
+      isErasing: this.store.getState().activeTool === 'eraser',
+    });
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -801,6 +878,25 @@ export class FogOfWarRenderer {
       return;
     }
     drawStrokeArea(this.stroke.mode === 'lasso' ? this.lassoGraphics : this.rectPreviewGraphics, this.stroke, erasing ? STROKE_COLORS.erase : STROKE_COLORS.paint);
+  }
+
+  /** Open outline of the polygon draft, with a rubber-band edge to the cursor. */
+  private previewPolygon(): void {
+    const g = this.lassoGraphics;
+    if (!g || g.destroyed) return;
+    g.clear();
+    const points = this.polygon.outline();
+    if (points.length < 2) {
+      requestRender(this._pixiApp);
+      return;
+    }
+    const erasing = this.store.getState().activeTool === 'eraser';
+    const color = erasing ? STROKE_COLORS.erase : STROKE_COLORS.paint;
+    const closed = this.polygon.points.length >= 3;
+    g.poly(points.flatMap((point) => [point.x, point.y]), closed);
+    g.stroke({ width: 2, color, alpha: 0.6 });
+    if (closed) g.fill({ color, alpha: 0.15 });
+    requestRender(this._pixiApp);
   }
 
   private renderPreviewFromStore(): boolean {
@@ -929,6 +1025,7 @@ export class FogOfWarRenderer {
 
   private resetDrawingState(): void {
     this.stroke.cancel();
+    this.polygon.cancel();
     this.clearPreviewGraphics();
   }
 

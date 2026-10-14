@@ -42,6 +42,7 @@ export const toolbar = {
   'toolbar.brush': 'Brush',
   'toolbar.lasso': 'Lasso',
   'toolbar.rectangle': 'Rectangle',
+  'toolbar.polygon': 'Polygon',
   'toolbar.icons': 'Icons',
   'toolbar.drawWalls': 'Draw walls',
   'toolbar.pointToPoint': 'Point to point',

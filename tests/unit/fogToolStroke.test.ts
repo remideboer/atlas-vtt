@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FederatedPointerEvent } from 'pixi.js';
 import { FogOfWarRenderer } from '../../src/app/pixi/fog/FogOfWarRenderer';
-import { ShapeStroke, type StrokeMode } from '../../src/app/tools/shapeStroke';
+import type { FogShapeMode } from '../../src/app/tools/FogTool';
+import { FogPolygonDraft } from '../../src/app/tools/fogPolygonDraft';
+import { ShapeStroke } from '../../src/app/tools/shapeStroke';
 
 interface FogState {
   activeTool: string;
@@ -13,12 +15,17 @@ interface FogState {
 
 interface FogToolHarness {
   stroke: ShapeStroke;
-  setFogMode(mode: StrokeMode): void;
+  polygon: FogPolygonDraft;
+  fogShapeMode: FogShapeMode;
+  setFogMode(mode: FogShapeMode): void;
   setupStoreSubscriptions(): void;
   onPointerDown(event: FederatedPointerEvent): void;
   onPointerMove(event: FederatedPointerEvent): void;
   onPointerUp(): void;
   onPointerLeave(): void;
+  handleEscape(): boolean;
+  handleEnter(): boolean;
+  handleDoubleClick(): void;
   cursorPreview: { shown: boolean; erasing: boolean | null };
   rebuildFogSprites: ReturnType<typeof vi.fn>;
   renderPreviewFromStore: ReturnType<typeof vi.fn>;
@@ -29,13 +36,16 @@ const at = (x: number, y: number): FederatedPointerEvent => ({ button: 0, global
 const graphics = (): Record<string, ReturnType<typeof vi.fn>> => ({ clear: vi.fn(), rect: vi.fn(), poly: vi.fn(), stroke: vi.fn().mockReturnThis(), fill: vi.fn() });
 
 /** The fog renderer's drawing tool on a 70 px grid, without its canvas: what a stroke commits is what the store is given. */
-function fogTool(activeTool: 'fog' | 'eraser', mode: StrokeMode): { tool: FogToolHarness; state: FogState; notify: () => void } {
+function fogTool(activeTool: 'fog' | 'eraser', mode: FogShapeMode): { tool: FogToolHarness; state: FogState; notify: () => void } {
   const state: FogState = { activeTool, isMapLoading: false, grid: { size: 70 }, objects: { fog: {} }, addFogOperation: vi.fn() };
   const listeners: ((state: FogState) => void)[] = [];
   const tool = Object.assign(Object.create(FogOfWarRenderer.prototype) as FogOfWarRenderer, {
     store: { getState: () => state, subscribe: (listener: (state: FogState) => void) => (listeners.push(listener), () => undefined) },
-    viewport: { toWorld: (point: { x: number; y: number }) => point },
-    stroke: Object.assign(new ShapeStroke(), { mode }),
+    viewport: { toWorld: (point: { x: number; y: number }) => point, scale: { x: 1 } },
+    stroke: Object.assign(new ShapeStroke(), { mode: mode === 'polygon' ? 'brush' : mode }),
+    polygon: new FogPolygonDraft(),
+    fogShapeMode: mode,
+    _pixiApp: {},
     compositor: { composite: vi.fn() },
     updatePreviewTexture: vi.fn(),
     cursorPreview: {
@@ -152,5 +162,33 @@ describe('the fog tool\'s stroke', () => {
     lasso.tool.onPointerLeave();
     lasso.tool.onPointerMove(at(120, 100));
     expect(lasso.tool.cursorPreview.shown).toBe(false);
+  });
+
+  it('commits a click-corner polygon as a lasso fill, snapped to the grid', () => {
+    const { tool, state } = fogTool('fog', 'polygon');
+    tool.onPointerDown(at(33, 33));
+    tool.onPointerUp();
+    tool.onPointerDown(at(141, 37));
+    tool.onPointerUp();
+    tool.onPointerDown(at(40, 121));
+    tool.onPointerUp();
+    expect(state.addFogOperation).not.toHaveBeenCalled();
+    expect(tool.handleEnter()).toBe(true);
+    expect(state.addFogOperation).toHaveBeenCalledWith({
+      type: 'lasso',
+      isErasing: false,
+      points: [{ x: 0, y: 0 }, { x: 140, y: 70 }, { x: 70, y: 140 }],
+    });
+    expect(tool.polygon.active).toBe(false);
+  });
+
+  it('Escape drops a polygon draft without committing', () => {
+    const { tool, state } = fogTool('eraser', 'polygon');
+    tool.onPointerDown(at(0, 0));
+    tool.onPointerDown(at(140, 0));
+    expect(tool.handleEscape()).toBe(true);
+    expect(tool.polygon.active).toBe(false);
+    tool.onPointerUp();
+    expect(state.addFogOperation).not.toHaveBeenCalled();
   });
 });
