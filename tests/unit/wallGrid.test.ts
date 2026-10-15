@@ -73,6 +73,9 @@ function segmentDistance(a: Point, b: Point, c: Point, d: Point): number {
 }
 
 describe('the wall grid', () => {
+  /** Hundreds of seeds and a 20,000-wall pile pass the default 5s timeout under a loaded suite. */
+  const ORACLE_TIMEOUT = 60_000;
+
   it('finds the nearest stop, any stop and the walls near a chord as brute force does', () => {
     const rand = rng(9);
     let checked = 0;
@@ -99,7 +102,7 @@ describe('the wall grid', () => {
       if (stopsBeforeTheWallInFront(trial)) short++;
     }
     expect(short).toBeGreaterThanOrEqual(9);
-  });
+  }, ORACLE_TIMEOUT);
 
   it('keeps its cells few on piles of walls and on long diagonal walls', () => {
     const rand = rng(3);
@@ -115,7 +118,7 @@ describe('the wall grid', () => {
     let listed = 0;
     for (let k = 0; k < mixed.items.length; k++) if (mixed.items[k] === 0) listed++;
     expect(listed).toBeLessThanOrEqual(3 * Math.max(mixed.cols, mixed.rows));
-  });
+  }, ORACLE_TIMEOUT);
 
   it('keeps the grids of the four arrays used last', () => {
     const rand = rng(5);

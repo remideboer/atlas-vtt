@@ -63,6 +63,9 @@ function compare(from: Point, walls: readonly WallSegment[], rand: () => number,
 
 const empty = (): Tally => ({ asked: 0, leaks: 0, deepest: 0, hidden: 0, behindOne: 0 });
 
+/** Thousands of sweeps under a loaded unit suite pass the default 5s timeout. */
+const ORACLE_TIMEOUT = 60_000;
+
 describe('limited walls that cross between their ends', () => {
   it('shows nothing behind both of two hedges that cross: the reviewer\'s case', () => {
     const from = { x: 520, y: 1000 };
@@ -122,7 +125,7 @@ describe('limited walls that cross between their ends', () => {
     expect(tally.asked).toBeGreaterThan(500_000);
     expect(tally.behindOne).toBeGreaterThan(20_000);
     expect({ leaks: tally.leaks, deepest: tally.deepest, hidden: tally.hidden }).toEqual({ leaks: 0, deepest: 0, hidden: 0 });
-  });
+  }, ORACLE_TIMEOUT);
 });
 
 describe('the cost of crossings', () => {
@@ -144,5 +147,5 @@ describe('the cost of crossings', () => {
     expect(polygon.length).toBeGreaterThan(22_500);
     expect(hatched).toBeLessThan(15_000);
     expect(stroked).toBeLessThan(15_000);
-  });
+  }, ORACLE_TIMEOUT);
 });

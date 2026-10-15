@@ -165,6 +165,9 @@ describe('limited walls', () => {
 });
 
 describe('limited walls against counting every crossing by hand', () => {
+  /** Hundreds of sweeps under a loaded unit suite pass the default 5s timeout. */
+  const ORACLE_TIMEOUT = 60_000;
+
   /** A seeded random number in [0, 1). */
   function random(seed: number): () => number {
     return () => {
@@ -225,6 +228,6 @@ describe('limited walls against counting every crossing by hand', () => {
     }
     expect(asked).toBeGreaterThan(10_000);
     expect(seenBehindOne).toBeGreaterThan(500);
-  });
+  }, ORACLE_TIMEOUT);
 });
 

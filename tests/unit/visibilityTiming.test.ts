@@ -38,10 +38,12 @@ const ON_LINE_CAST_BOUND = Math.ceil(1.25 * 926);
 
 /**
  * Durations measured on the machine the bounds were set on (Apple M4 Pro, this suite's Node), in
- * ms; CI asserts ten times them, never a budget. The hostile piles: their polygons from every
- * place listed, grid built on the way.
+ * ms; CI asserts ten times them, never a budget. A grid of pillars is ~1 ms there: ten times that
+ * is inside scheduling noise of a loaded unit suite, so the build also keeps a 25 ms floor. The
+ * hostile piles: their polygons from every place listed, grid built on the way.
  */
 const EXPECTED_MS = { gridRooms: 2, gridPillars: 1.2 };
+const GRID_BUILD_FLOOR_MS = 25;
 const EXPECTED_HOSTILE_MS: Record<string, number> = {
   'two thousand walls from six pixels': 80,
   'two thousand short walls in twelve pixels': 45,
@@ -106,8 +108,8 @@ describe('sight on maps with many walls', { timeout: 600_000 }, () => {
     computeVisibility(pillars.origins[0]!, radius, pillars.walls, undefined, 'sight');
     const sight = median(pillars.origins.slice(0, 12).map((origin) => timed(() => computeVisibility(origin, radius, pillars.walls, undefined, 'sight'))));
     console.info(`sight timing: pillars ${pillars.walls.length} walls, ${sight.toFixed(2)} ms a polygon; grid build rooms ${gridRooms.toFixed(2)} ms, pillars ${gridPillars.toFixed(2)} ms`);
-    expect(gridRooms).toBeLessThan(10 * EXPECTED_MS.gridRooms);
-    expect(gridPillars).toBeLessThan(10 * EXPECTED_MS.gridPillars);
+    expect(gridRooms).toBeLessThan(Math.max(GRID_BUILD_FLOOR_MS, 10 * EXPECTED_MS.gridRooms));
+    expect(gridPillars).toBeLessThan(Math.max(GRID_BUILD_FLOOR_MS, 10 * EXPECTED_MS.gridPillars));
   });
 
   it.each(HOSTILE_SCENES)('stays within its bound on a hostile pile of %s', (_, make) => {
