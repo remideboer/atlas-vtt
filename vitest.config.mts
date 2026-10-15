@@ -15,6 +15,18 @@ export default defineConfig({
   },
   resolve: { alias },
   test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/app/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/__tests__/**',
+        'src/**/*.gpu.test.ts',
+        'src/app/assets/**',
+        'locales/**',
+      ],
+      reporter: ['text-summary', 'lcov'],
+      reportsDirectory: './coverage',
+    },
     projects: [
       {
         extends: true,
