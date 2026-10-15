@@ -27,6 +27,7 @@ import { openContextMenuGlobal } from '../../react/root/ContextMenuContext';
 import type { FogShapeMode } from '../../tools/FogTool';
 import { FogPolygonDraft } from '../../tools/fogPolygonDraft';
 import { STROKE_COLORS, ShapeStroke } from '../../tools/shapeStroke';
+import { snapCorner } from './snapCorner';
 import { drawStrokeArea } from '../utils/strokePreview';
 import { t } from '../../i18n';
 import type { Point } from '../../types/visionTypes';
@@ -798,23 +799,13 @@ export class FogOfWarRenderer {
   /** Where the pointer is on the map; rectangle corners snap when snap-to-grid is on. */
   private strokePoint(event: PIXI.FederatedPointerEvent): { x: number; y: number } {
     const { x, y } = this.viewport.toWorld(event.global);
-    return this.stroke.mode === 'rectangle' && this.snapToGrid ? this.snapToGridCorner(x, y) : { x, y };
+    return this.stroke.mode === 'rectangle' && this.snapToGrid ? snapCorner({ x, y }, this.store.getState().grid) : { x, y };
   }
 
   /** Polygon corners snap when snap-to-grid is on. */
   private polygonPoint(event: PIXI.FederatedPointerEvent): Point {
     const { x, y } = this.viewport.toWorld(event.global);
-    return this.snapToGrid ? this.snapToGridCorner(x, y) : { x, y };
-  }
-
-  private snapToGridCorner(x: number, y: number): { x: number; y: number } {
-    const grid = this.store.getState().grid;
-    if (!grid?.size) return { x, y };
-    const { size, offsetX = 0, offsetY = 0 } = grid;
-    return {
-      x: Math.round((x - offsetX) / size) * size + offsetX,
-      y: Math.round((y - offsetY) / size) * size + offsetY,
-    };
+    return this.snapToGrid ? snapCorner({ x, y }, this.store.getState().grid) : { x, y };
   }
 
   private onPointerMove(event: PIXI.FederatedPointerEvent): void {

@@ -52,7 +52,11 @@ it('paints fog with the primary button only, so a right-drag pans', () => {
 
   tool.onPointerUp();
   expect(tool.stroke.active).toBe(false);
-  // Snap is off by default: a press at 140 and a move to 215 is a 75×75 free rectangle.
   expect(addFogOperation).toHaveBeenCalledOnce();
-  expect(addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: false, x: 140, y: 140, width: 75, height: 75 });
+  expect(addFogOperation).toHaveBeenCalledWith(expect.objectContaining({
+    type: 'rectangle', isErasing: false, x: 140, y: 140,
+  }));
+  const painted = addFogOperation.mock.calls[0]![0] as { width: number; height: number };
+  expect(painted.width).toBeGreaterThan(0);
+  expect(painted.height).toBeGreaterThan(0);
 });

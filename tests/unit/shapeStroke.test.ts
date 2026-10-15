@@ -44,6 +44,14 @@ describe('ShapeStroke', () => {
     expect(stroke.finish()).toEqual({ type: 'rectangle', x: 40, y: 50, width: 60, height: 30 });
   });
 
+  it('spans a 75 px square from 140 to 215, the fog tool\'s unsnapped world numbers', () => {
+    const stroke = new ShapeStroke();
+    stroke.mode = 'rectangle';
+    stroke.begin({ x: 140, y: 140 });
+    stroke.extend({ x: 215, y: 215 });
+    expect(stroke.finish()).toEqual({ type: 'rectangle', x: 140, y: 140, width: 75, height: 75 });
+  });
+
   it('is no area as a rectangle without width or height, or one that never moved', () => {
     const stroke = new ShapeStroke();
     stroke.mode = 'rectangle';

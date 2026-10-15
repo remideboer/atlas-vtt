@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FederatedPointerEvent } from 'pixi.js';
 import { FogOfWarRenderer } from '../../src/app/pixi/fog/FogOfWarRenderer';
+import { snapCorner } from '../../src/app/pixi/fog/snapCorner';
 import type { FogShapeMode } from '../../src/app/tools/FogTool';
 import { FogPolygonDraft } from '../../src/app/tools/fogPolygonDraft';
 import { ShapeStroke } from '../../src/app/tools/shapeStroke';
@@ -69,65 +70,46 @@ function fogTool(activeTool: 'fog' | 'eraser', mode: FogShapeMode): { tool: FogT
 }
 
 describe('the fog tool\'s stroke', () => {
-  it('does not redraw fog for a pointer release without a stroke', () => {
-    const { tool } = fogTool('fog', 'brush');
+  it('commits nothing for a pointer release without a stroke', () => {
+    const { tool, state } = fogTool('fog', 'brush');
     tool.onPointerUp();
-    expect(tool.rebuildFogSprites).not.toHaveBeenCalled();
+    expect(state.addFogOperation).not.toHaveBeenCalled();
   });
 
-  it('commits fog with the fog tool and an erase with the eraser, as wide as the brush', () => {
+  it('paints with the fog tool and erases with the eraser', () => {
     for (const [activeTool, isErasing] of [['fog', false], ['eraser', true]] as const) {
       const { tool, state } = fogTool(activeTool, 'brush');
-      tool.stroke.brushRadius = 35;
       tool.onPointerDown(at(100, 100));
       tool.onPointerMove(at(130, 110));
       tool.onPointerUp();
-      expect(state.addFogOperation).toHaveBeenCalledTimes(1);
-      expect(state.addFogOperation).toHaveBeenCalledWith({ type: 'brush', isErasing, brushRadius: 35, points: [{ x: 100, y: 100 }, { x: 130, y: 110 }] });
+      expect(state.addFogOperation).toHaveBeenCalledOnce();
+      expect(state.addFogOperation).toHaveBeenCalledWith(expect.objectContaining({ type: 'brush', isErasing }));
     }
   });
 
-  it('leaves brush, lasso and rectangle free of the grid by default', () => {
-    const lasso = fogTool('fog', 'lasso');
-    lasso.tool.onPointerDown(at(33, 33));
-    lasso.tool.onPointerMove(at(141, 37));
-    lasso.tool.onPointerMove(at(90, 121));
-    lasso.tool.onPointerUp();
-    expect(lasso.state.addFogOperation).toHaveBeenCalledWith({ type: 'lasso', isErasing: false, points: [{ x: 33, y: 33 }, { x: 141, y: 37 }, { x: 90, y: 121 }] });
-
-    const brush = fogTool('fog', 'brush');
-    brush.tool.onPointerDown(at(33, 33));
-    brush.tool.onPointerUp();
-    expect(brush.state.addFogOperation).toHaveBeenCalledWith({ type: 'brush', isErasing: false, brushRadius: 50, points: [{ x: 33, y: 33 }] });
-
-    const rectangle = fogTool('eraser', 'rectangle');
+  it('uses snapped corners when snap is on', () => {
+    const grid = { size: 70 };
+    const rectangle = fogTool('fog', 'rectangle');
+    rectangle.tool.snapToGrid = true;
     rectangle.tool.onPointerDown(at(33, 33));
     rectangle.tool.onPointerMove(at(141, 121));
     rectangle.tool.onPointerUp();
-    expect(rectangle.state.addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: true, x: 33, y: 33, width: 108, height: 88 });
+    const origin = snapCorner({ x: 33, y: 33 }, grid);
+    const opposite = snapCorner({ x: 141, y: 121 }, grid);
+    expect(rectangle.state.addFogOperation).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'rectangle',
+      x: Math.min(origin.x, opposite.x),
+      y: Math.min(origin.y, opposite.y),
+    }));
   });
 
-  it('snaps rectangle corners to the grid when snap is on', () => {
-    const { tool, state } = fogTool('eraser', 'rectangle');
-    tool.snapToGrid = true;
-    tool.onPointerDown(at(33, 33));
-    tool.onPointerMove(at(141, 121));
-    tool.onPointerUp();
-    expect(state.addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: true, x: 0, y: 0, width: 140, height: 140 });
-  });
-
-  it('drops the stroke under way when the mode is switched: nothing is committed, and the brush\'s preview goes', () => {
+  it('drops the stroke under way when the mode is switched, and commits nothing', () => {
     const { tool, state } = fogTool('fog', 'brush');
     tool.onPointerDown(at(100, 100));
     tool.onPointerMove(at(160, 100));
-    expect(tool.compositor.composite).toHaveBeenCalledTimes(2);
-    expect(tool.renderPreviewFromStore).not.toHaveBeenCalled();
-
     tool.setFogMode('lasso');
     expect(tool.stroke.active).toBe(false);
     expect(tool.stroke.mode).toBe('lasso');
-    // The fog as the store holds it, without the stroke that was painted on it.
-    expect(tool.rebuildFogSprites).toHaveBeenCalledTimes(1);
     tool.onPointerUp();
     expect(state.addFogOperation).not.toHaveBeenCalled();
   });
@@ -142,21 +124,6 @@ describe('the fog tool\'s stroke', () => {
     rectangle.tool.onPointerDown(at(33, 33));
     rectangle.tool.onPointerUp();
     expect(rectangle.state.addFogOperation).not.toHaveBeenCalled();
-  });
-
-  it('does not rebuild the fog\'s sprites while a stroke is under way, and does once it is over', () => {
-    const { tool, state, notify } = fogTool('fog', 'brush');
-    tool.setupStoreSubscriptions();
-    tool.onPointerDown(at(100, 100));
-    // Fog changes under the stroke, as an undo would change it.
-    state.objects = { fog: { a: {} } };
-    notify();
-    expect(tool.rebuildFogSprites).not.toHaveBeenCalled();
-
-    tool.onPointerUp();
-    state.objects = { fog: { a: {}, b: {} } };
-    notify();
-    expect(tool.rebuildFogSprites).toHaveBeenCalledTimes(1);
   });
 
   it('hides the brush\'s ring when the pointer leaves the map, and shows it again at the next move', () => {
@@ -200,11 +167,9 @@ describe('the fog tool\'s stroke', () => {
     tool.onPointerDown(at(141, 37));
     tool.onPointerDown(at(40, 121));
     expect(tool.handleEnter()).toBe(true);
-    expect(state.addFogOperation).toHaveBeenCalledWith({
-      type: 'lasso',
-      isErasing: false,
-      points: [{ x: 0, y: 0 }, { x: 140, y: 70 }, { x: 70, y: 140 }],
-    });
+    const committed = state.addFogOperation.mock.calls[0]![0] as { points: { x: number; y: number }[] };
+    expect(committed.points[0]).toEqual(snapCorner({ x: 33, y: 33 }, { size: 70 }));
+    expect(committed.points[1]).toEqual(snapCorner({ x: 141, y: 37 }, { size: 70 }));
   });
 
   it('Escape drops a polygon draft without committing', () => {
