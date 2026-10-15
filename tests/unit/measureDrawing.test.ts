@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { Graphics, type Circle } from 'pixi.js';
-import { drawMeasureCircle, drawMeasureCone, drawMeasurePath, drawMeasurePoint, drawMeasurement, type MeasureRecord } from '../../src/app/pixi/utils/measureDrawing';
+import { describe, expect, it, vi } from 'vitest';
+import { Bounds, Graphics, Text, type Circle } from 'pixi.js';
+import { createMeasureLabelText, drawMeasureCircle, drawMeasureCone, drawMeasureLabel, drawMeasurePath, drawMeasurePoint, drawMeasurement, measureLabelFontSize, type MeasureRecord } from '../../src/app/pixi/utils/measureDrawing';
 
 function circleRadii(graphics: Graphics): number[] {
   return graphics.context.instructions.flatMap((instruction) =>
@@ -11,6 +11,32 @@ function circleRadii(graphics: Graphics): number[] {
         .map(({ shape }) => (shape as Circle).radius),
   );
 }
+
+describe('screen size', () => {
+  it('draws the path at a constant width on screen', () => {
+    const graphics = new Graphics();
+    drawMeasurePath(graphics, 0xff0000, [{ x: 0, y: 0 }, { x: 40, y: 0 }], 0.5);
+    const widths = graphics.context.instructions.flatMap((instruction) =>
+      instruction.action === 'texture' ? [] : [instruction.data.style.width],
+    );
+    expect(widths).toEqual([12, 8, 4]);
+  });
+
+  it('keeps the label 16 px on screen at any zoom', () => {
+    expect(measureLabelFontSize(1)).toBe(16);
+    expect(measureLabelFontSize(0.25)).toBe(64);
+    expect(measureLabelFontSize(4)).toBe(4);
+  });
+
+  it('places the label on a whole screen pixel', () => {
+    vi.spyOn(Text.prototype, 'getLocalBounds').mockReturnValue(new Bounds(0, 0, 40, 18));
+    const text = createMeasureLabelText();
+    drawMeasureLabel(new Graphics(), text, { x: 10.4, y: 3.6 }, 2);
+    expect(text.position.x).toBe(10.5);
+    expect(text.position.y).toBe(3.5);
+    vi.restoreAllMocks();
+  });
+});
 
 describe('drawMeasureCircle', () => {
   // Canvas 2D (the renderer without WebGL) throws on a negative arc radius, which stops the map from rendering.

@@ -180,13 +180,26 @@ export class MeasureRenderer {
   }
   
   private updateTextScale(): void {
-    if (!this.parts.labelDrawn) return;
-    
-    this.measureText.style.fontSize = measureLabelFontSize(this.viewport.scale.x);
-    
-    // Redraw pill if text is visible
-    if (this.current.live) {
-      this.updatePillAndText();
+    const scale = this.viewport.scale.x;
+    if (this.parts.labelDrawn) {
+      this.measureText.style.fontSize = measureLabelFontSize(scale);
+      const live = this.current.live;
+      if (live) {
+        this.measureGraphics.clear();
+        drawMeasurement(this.measureGraphics, cssColorToHexNumber(getObsidianAccentColor()), live, this.measurementSettings().coneAngle, scale);
+        this.updatePillAndText();
+      }
+    }
+    for (const [index, measurement] of this.persistentMeasurements.entries()) {
+      if (measurement.labelScale === scale) continue;
+      const record = this.current.kept[index];
+      if (!record) continue;
+      measurement.labelScale = scale;
+      measurement.graphics.clear();
+      drawMeasurement(measurement.graphics, cssColorToHexNumber(getObsidianAccentColor()), record, this.measurementSettings().coneAngle, scale);
+      measurement.text.style.fontSize = measureLabelFontSize(scale);
+      measurement.labelCenter = this.labelAnchor(record.start, record.end);
+      drawMeasureLabel(measurement.pill, measurement.text, measurement.labelCenter, scale);
     }
   }
   
@@ -299,7 +312,7 @@ export class MeasureRenderer {
     const live = { shape: this.measureShape, start, end };
     this.setMeasurements({ ...this.current, live });
     this.measureGraphics.clear();
-    drawMeasurement(this.measureGraphics, cssColorToHexNumber(getObsidianAccentColor()), live, this.measurementSettings().coneAngle);
+    drawMeasurement(this.measureGraphics, cssColorToHexNumber(getObsidianAccentColor()), live, this.measurementSettings().coneAngle, this.viewport.scale.x);
     this.measureText.text = this.measurementLabel(start, end);
     this.parts.drawn();
     this.updatePillAndText();
@@ -350,11 +363,11 @@ export class MeasureRenderer {
       text: this.measureText.text, 
       style: this.measureText.style.clone() 
     });
-    drawMeasurement(persistGraphics, cssColorToHexNumber(getObsidianAccentColor()), record, this.measurementSettings().coneAngle);
+    const labelScale = this.viewport.scale.x;
+    drawMeasurement(persistGraphics, cssColorToHexNumber(getObsidianAccentColor()), record, this.measurementSettings().coneAngle, labelScale);
 
     persistText.anchor.set(0.5);
     const labelCenter = this.labelAnchor(record.start, record.end);
-    const labelScale = this.viewport.scale.x;
     drawMeasureLabel(persistPill, persistText, labelCenter, labelScale);
     const measurement = { graphics: persistGraphics, pill: persistPill, text: persistText, labelCenter, labelScale };
     this.parts.keep(measurement);

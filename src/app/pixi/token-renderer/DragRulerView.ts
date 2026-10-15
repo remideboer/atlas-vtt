@@ -22,9 +22,14 @@ export class DragRulerView {
   private readonly text = createMeasureLabelText();
   /** Where the label stands while the ruler shows; a theme change redraws it there. */
   private labelCenter: Point | null = null;
+  /** The path last drawn, so a zoom redraws it at the new scale. */
+  private drawn: { points: readonly Point[]; distance: string } | null = null;
   private readonly stopThemeWatch = watchMeasureLabelTheme(() => {
     if (this.labelCenter) drawMeasureLabel(this.pill, this.text, this.labelCenter, this.viewport.scale.x);
   });
+  private readonly onZoom = (): void => {
+    if (this.drawn) this.draw(this.drawn.points, this.drawn.distance);
+  };
 
   constructor(private readonly viewport: Viewport, tokenLayer: Container) {
     this.path.eventMode = 'none';
@@ -35,6 +40,7 @@ export class DragRulerView {
     this.path.zIndex = tokenLayer.zIndex;
     this.viewport.addChildAt(this.path, this.viewport.getChildIndex(tokenLayer));
     this.viewport.addChild(this.label);
+    this.viewport.on('zoomed', this.onZoom);
     this.clear();
   }
 
@@ -46,14 +52,15 @@ export class DragRulerView {
     const scale = this.viewport.scale.x;
 
     this.path.clear();
-    drawMeasurePath(this.path, accent, points);
+    drawMeasurePath(this.path, accent, points, scale);
     // The dragged token covers the end point; the origin and waypoints stay marked.
-    for (const point of points.slice(0, -1)) drawMeasurePoint(this.path, accent, point);
+    for (const point of points.slice(0, -1)) drawMeasurePoint(this.path, accent, point, scale);
 
     this.text.text = distance;
     this.text.style.fontSize = measureLabelFontSize(scale);
     drawMeasureLabel(this.pill, this.text, middle, scale);
     this.labelCenter = middle;
+    this.drawn = { points, distance };
 
     this.path.visible = true;
     this.label.visible = true;
@@ -63,6 +70,7 @@ export class DragRulerView {
     this.path.clear();
     this.pill.clear();
     this.labelCenter = null;
+    this.drawn = null;
     this.path.visible = false;
     this.label.visible = false;
   }
@@ -73,6 +81,7 @@ export class DragRulerView {
 
   destroy(): void {
     this.stopThemeWatch();
+    this.viewport.off('zoomed', this.onZoom);
     destroyTree(this.path);
     destroyTree(this.label);
   }
