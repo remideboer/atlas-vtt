@@ -7,7 +7,7 @@ import { SettingsService } from '../../src/app/services/SettingsService';
 import type { ViewAtlasState } from '../../src/app/storeFactory';
 import { frameSource, sizePlayerWindow } from '../mocks/playerFrameSource';
 
-vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ restorePlayerWindow: vi.fn() }));
+vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ restorePlayerWindow: vi.fn(), closePlayerWindow: vi.fn() }));
 
 afterEach(() => { PlayerWindowService.getInstance()?.destroy(false); vi.useRealTimers(); vi.restoreAllMocks(); });
 

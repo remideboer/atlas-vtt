@@ -32,6 +32,7 @@ export const palette = {
   'palette.sceneSnapshots': 'Scene snapshots',
   'palette.searchPlaceholder': 'Search commands...',
   'palette.openPlayerWindow': 'Open Player Window',
+  'palette.closePlayerWindow': 'Close Player Window',
   'palette.sendMapToPlayerView': 'Send Current Map to Player View',
   'palette.showMapInPlayerWindow': 'Show Current Map in Local Player Window',
   'palette.tab.all': 'All',

@@ -93,6 +93,16 @@ export async function openPlayerWindow(app: App): Promise<void> {
   if (player) await restorePlayerWindow(app, player);
 }
 
+/** Close the player window. Nothing is open when players are not being shown here. */
+export function closePlayerWindow(): void {
+  const service = PlayerWindowService.getInstance();
+  if (!service?.isWindowOpen()) {
+    new Notice(t('player.notOpen'));
+    return;
+  }
+  service.destroy();
+}
+
 /** Player views being attached now; Obsidian's own restore of the same leaf waits for none. */
 const attaching = new WeakSet<LocalPlayerView>();
 

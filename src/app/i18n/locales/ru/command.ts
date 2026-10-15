@@ -7,6 +7,7 @@ export const command: Translation = {
   'command.displayImageOnPlayerView': 'Показать изображение игрокам',
   'command.importStatblockTokens': 'Импортировать токены из Fantasy Statblocks',
   'command.openDashboard': 'Открыть панель',
+  'command.closePlayerWindow': 'Закрыть окно игроков',
   'command.openSceneBrowser': 'Открыть список сцен',
   'command.reportIssue': 'Сообщить о проблеме…',
   'command.sendMapToPlayerView': 'Показать текущую карту игрокам',

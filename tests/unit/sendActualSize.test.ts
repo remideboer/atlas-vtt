@@ -19,6 +19,7 @@ vi.mock('obsidian', async (importOriginal) => ({
 
 vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({
   presentActiveTab: vi.fn(),
+  closePlayerWindow: vi.fn(),
 }));
 
 vi.mock('../../src/app/services/PlayerWindowService', () => ({

@@ -31,6 +31,7 @@ export const palette: Translation = {
   'palette.playerDashboard': 'Настройка панели игроков',
   'palette.sceneSnapshots': 'Снимки сцены',
   'palette.searchPlaceholder': 'Поиск команд...',
+  'palette.closePlayerWindow': 'Закрыть окно игроков',
   'palette.sendMapToPlayerView': 'Показать текущую карту игрокам',
   'palette.showMapInPlayerWindow': 'Показать текущую карту в окне игроков на этом компьютере',
   'palette.tab.all': 'Все',

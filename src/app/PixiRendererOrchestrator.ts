@@ -21,7 +21,7 @@ import { openPlayerScreenSetup, sendMapAtActualSize } from "./player/sendActualS
 import { openContextMenuGlobal } from "./react/root/ContextMenuContext";
 import { savePlayerRotation } from "./services/deviceSettings";
 import { PlayerWindowService } from "./services/PlayerWindowService";
-import { openPlayerWindow, presentActiveTab } from "./services/PlayerWindowPresenter";
+import { openPlayerWindow, closePlayerWindow, presentActiveTab } from "./services/PlayerWindowPresenter";
 import { openInsertTokenPicker } from "./packages/components/token-picker/InsertTokenPickerModal";
 import type { AtlasView } from "./atlas-view";
 import { TokenRenderer } from "./pixi/token-renderer"; // Import TokenRenderer
@@ -802,6 +802,7 @@ export class PixiRendererOrchestrator { // Renamed class
         },
         openScreenSetup: () => { void openPlayerScreenSetup(this.obsApp); },
         openPlayerWindow: () => { void openPlayerWindow(this.obsApp); },
+        closePlayerWindow: () => closePlayerWindow(),
         togglePause: () => { players?.togglePlayerPause(); },
         toggleZoomLock: () => { players?.togglePlayerZoomLock(); },
         setRotation: (rotation) => {

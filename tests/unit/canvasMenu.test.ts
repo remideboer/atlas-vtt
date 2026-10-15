@@ -14,6 +14,7 @@ function actions(over: Partial<CanvasMenuActions> = {}): CanvasMenuActions {
     sendActualSize: vi.fn(),
     openScreenSetup: vi.fn(),
     openPlayerWindow: vi.fn(),
+    closePlayerWindow: vi.fn(),
     togglePause: vi.fn(),
     toggleZoomLock: vi.fn(),
     setRotation: vi.fn(),
@@ -36,8 +37,11 @@ describe('blank canvas menu', () => {
     if (rotation?.type !== 'submenu' || typeof rotation.children === 'function') throw new Error('rotation submenu');
     expect(rotation.children.map(entry => entry.type === 'item' ? entry.checked : false)).toEqual([false, true, false, false]);
     if (commands?.type !== 'submenu' || typeof commands.children === 'function') throw new Error('commands submenu');
-    const pause = commands.children[4];
-    const zoom = commands.children[5];
+    const close = commands.children[4];
+    const pause = commands.children[5];
+    const zoom = commands.children[6];
+    expect(close?.type).toBe('item');
+    if (close?.type === 'item') expect(close.label).toBe('Close player window');
     expect(pause?.type).toBe('item');
     expect(zoom?.type).toBe('item');
     if (pause?.type === 'item') expect(pause.checked).toBe(true);
@@ -73,7 +77,10 @@ describe('blank canvas menu', () => {
     const send = commands.children[0];
     if (send?.type === 'item') send.onClick();
     expect(menuActions.sendMap).toHaveBeenCalledOnce();
-    const pause = commands.children[4];
+    const close = commands.children[4];
+    if (close?.type === 'item') close.onClick();
+    expect(menuActions.closePlayerWindow).toHaveBeenCalledOnce();
+    const pause = commands.children[5];
     if (pause?.type === 'item') pause.onClick();
     expect(menuActions.togglePause).toHaveBeenCalledOnce();
     const actual = commands.children[1];

@@ -15,6 +15,7 @@ export interface CanvasMenuActions {
   sendActualSize(): void;
   openScreenSetup(): void;
   openPlayerWindow(): void;
+  closePlayerWindow(): void;
   togglePause(): void;
   toggleZoomLock(): void;
   setRotation(rotation: PlayerRotation): void;
@@ -52,6 +53,7 @@ export function canvasMenuEntries(actions: CanvasMenuActions): ContextMenuEntry[
       },
       { type: 'item', label: t('player.screenSetup'), icon: 'monitor', onClick: () => actions.openScreenSetup() },
       { type: 'item', label: t('command.openPlayerWindow'), icon: 'popup-open', onClick: () => actions.openPlayerWindow() },
+      { type: 'item', label: t('command.closePlayerWindow'), icon: 'x', onClick: () => actions.closePlayerWindow() },
       {
         type: 'item',
         label: t('player.pauseView'),

@@ -5,7 +5,7 @@ import { DASHBOARD_VIEW_TYPE } from '../dashboard-view';
 import { t } from '../i18n';
 import type { GlobalAssetManagerService } from '../services/GlobalAssetManagerService';
 import type { ImageDisplayService } from '../services/ImageDisplayService';
-import { openPlayerWindow, presentActiveTab } from '../services/PlayerWindowPresenter';
+import { openPlayerWindow, closePlayerWindow, presentActiveTab } from '../services/PlayerWindowPresenter';
 import { hasBestiaryFrontmatter } from '../services/statblockNoteSource';
 import { TokenStatblockLinkService } from '../services/TokenStatblockLinkService';
 import { cleanupMissingAssets } from './cleanupMissingAssets';
@@ -78,6 +78,12 @@ function registerPlayerViewCommands(plugin: Plugin, imageDisplay: ImageDisplaySe
     id: 'open-player-window',
     name: t('command.openPlayerWindow'),
     callback: () => void openPlayerWindow(plugin.app),
+  });
+
+  plugin.addCommand({
+    id: 'close-player-window',
+    name: t('command.closePlayerWindow'),
+    callback: () => closePlayerWindow(),
   });
 
   plugin.addRibbonIcon('monitor', t('command.displayImageOnPlayerView'), () => {

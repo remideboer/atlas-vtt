@@ -20,6 +20,7 @@ import {
   MonitorUp,
   MonitorPlay,
   AppWindow,
+  X,
   Move,
   Users,
   Palette,
@@ -29,7 +30,7 @@ import {
 import { CoinIcon } from './CoinIcon';
 import { useAtlasStore, useViewStoreHook } from '../ViewStoreContext';
 import { useAtlasUI } from '../root/AtlasUIContext';
-import { openPlayerWindow, presentActiveTab } from '../../services/PlayerWindowPresenter';
+import { openPlayerWindow, closePlayerWindow, presentActiveTab } from '../../services/PlayerWindowPresenter';
 import { debounce } from '../../../utils/debounce';
 import { cn } from '../../../utils/cn';
 import { isShortcutScopeActive } from '../../utils/activeLeafGuard';
@@ -314,6 +315,16 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       section: "mode",
       action: () => {
         void openPlayerWindow(app);
+        onClose();
+      },
+    },
+    {
+      id: "close-player-window",
+      icon: <X />,
+      label: t('palette.closePlayerWindow'),
+      section: "mode",
+      action: () => {
+        closePlayerWindow();
         onClose();
       },
     },

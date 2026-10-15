@@ -8,6 +8,7 @@ export const command = {
   'command.importStatblockTokens': 'Import tokens from Fantasy Statblocks',
   'command.openDashboard': 'Open dashboard',
   'command.openPlayerWindow': 'Open player window',
+  'command.closePlayerWindow': 'Close player window',
   'command.openSceneBrowser': 'Open scene browser',
   'command.reportIssue': 'Report an issue…',
   'command.sendMapToPlayerView': 'Send current map to player view',

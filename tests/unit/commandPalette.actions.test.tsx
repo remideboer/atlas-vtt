@@ -4,14 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { create } from 'zustand';
 import { ViewStoreProvider } from '../../src/app/react/ViewStoreContext';
 
-const { openSceneBrowser, openPlayerWindow } = vi.hoisted(() => ({ openSceneBrowser: vi.fn(), openPlayerWindow: vi.fn() }));
+const { openSceneBrowser, openPlayerWindow, closePlayerWindow } = vi.hoisted(() => ({
+  openSceneBrowser: vi.fn(),
+  openPlayerWindow: vi.fn(),
+  closePlayerWindow: vi.fn(),
+}));
 
 vi.mock('../../src/app/react/root/AtlasUIContext', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../src/app/react/root/AtlasUIContext')>(),
   useAtlasUI: () => ({ view: { openSceneBrowser }, app: {} }),
 }));
 vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: {} }));
-vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentActiveTab: vi.fn(), openPlayerWindow }));
+vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentActiveTab: vi.fn(), openPlayerWindow, closePlayerWindow }));
 vi.mock('../../src/app/utils/activeLeafGuard', () => ({ isShortcutScopeActive: () => true }));
 vi.mock('../../src/app/react/components/command-palette/GridSettingsPanel', () => ({ GridSettingsPanel: () => null }));
 vi.mock('../../src/app/react/components/command-palette/TokenSettingsPanel', () => ({ TokenSettingsPanel: () => null }));
@@ -115,6 +119,18 @@ describe('Atlas search actions', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Open Player Window/ }));
 
     expect(openPlayerWindow).toHaveBeenCalledOnce();
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('closes the player window from the palette and closes the palette', () => {
+    const onClose = vi.fn();
+    const store = create(() => ({}));
+    render(<ViewStoreProvider store={store}><CommandPalette isOpen onClose={onClose} /></ViewStoreProvider>);
+
+    fireEvent.change(screen.getByPlaceholderText('Search commands...'), { target: { value: 'close player' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Close Player Window/ }));
+
+    expect(closePlayerWindow).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledOnce();
   });
 

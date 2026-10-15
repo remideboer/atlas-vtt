@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/app/atlas-view', () => ({ AtlasView: class AtlasView {} }));
 vi.mock('../../src/app/dashboard-view', () => ({ DASHBOARD_VIEW_TYPE: 'dashboard' }));
-vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentActiveTab: vi.fn(), openPlayerWindow: vi.fn() }));
+vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentActiveTab: vi.fn(), openPlayerWindow: vi.fn(), closePlayerWindow: vi.fn() }));
 vi.mock('../../src/app/services/TokenStatblockLinkService', () => ({ TokenStatblockLinkService: {} }));
 vi.mock('../../src/app/plugin/cleanupMissingAssets', () => ({ cleanupMissingAssets: vi.fn() }));
 
@@ -23,7 +23,7 @@ describe('Obsidian panel toggle commands', () => {
 
     const ids = commands.map((command) => command.id);
     expect(ids).toEqual(expect.arrayContaining([
-      'open-dashboard', 'open-scene-browser', 'import-statblock-tokens',
+      'open-dashboard', 'open-scene-browser', 'import-statblock-tokens', 'close-player-window',
     ]));
     expect(addRibbonIcon).toHaveBeenCalledWith('home', expect.any(String), expect.any(Function));
     expect(ids).not.toContain('open-music-player');
