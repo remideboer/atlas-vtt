@@ -80,7 +80,7 @@ function plainColour(hex: string): [number, number, number] {
   return [linear((value >> 16) & 0xff), linear((value >> 8) & 0xff), linear(value & 0xff)];
 }
 
-/** For a control that requires no difference at all: the comparison then walks every sequence, which takes seconds on a busy machine. */
+/** A comparison walks sequences until it can answer. On a busy machine that passes the default timeout, and a control that finds no difference walks every sequence. */
 const WHOLE_RUN_TIMEOUT = 60_000;
 
 describe('the scene model comparison notices what a broken scene model would change', () => {
@@ -90,7 +90,7 @@ describe('the scene model comparison notices what a broken scene model would cha
       return { model: { ...model }, rebuilt };
     });
     expect(found).not.toBeNull();
-  });
+  }, WHOLE_RUN_TIMEOUT);
 
   it('fails when the players\' sight is an equal copy of the GM\'s', async () => {
     const copied = once((model) => ({ ...model, sight: { ...model.sight, regions: [...model.sight.regions] } }));
