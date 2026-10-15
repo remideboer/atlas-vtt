@@ -1080,6 +1080,7 @@ export class TokenRenderer {
 
     // Nameplate changes
     if (token.showNameplate !== prevToken.showNameplate) return true;
+    if (token.hideNameplateFromPlayers !== prevToken.hideNameplateFromPlayers) return true;
 
     // Conditions, compared by value
     if ((token.conditions ?? []).join() !== (prevToken.conditions ?? []).join()) return true;

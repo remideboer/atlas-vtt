@@ -14,6 +14,8 @@ export const token: Translation = {
   'token.hide': 'Скрыть',
   'token.hideBarsFromPlayers': 'Скрыть полосы от игроков',
   'token.showBarsToPlayers': 'Показать полосы игрокам',
+  'token.hideNameplateFromPlayers': 'Скрыть имя от игроков',
+  'token.showNameplateToPlayers': 'Показать имя игрокам',
   'token.saveEncounter': 'Сохранить как стычку',
   'token.addInitiative': 'Добавить в инициативу',
   'token.showStatblock': 'Показать статблок',

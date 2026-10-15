@@ -58,6 +58,8 @@ export function insertBlankToken(
     size,
     isHidden,
     hideBarsFromPlayers: true,
+    showNameplate: true,
+    hideNameplateFromPlayers: true,
     ...(vision && { vision }),
   } as TokenInput;
   const ids = store.getState().addTokens([blank]);

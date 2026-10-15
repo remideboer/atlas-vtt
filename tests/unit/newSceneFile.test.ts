@@ -41,7 +41,7 @@ describe('the file of a new scene', () => {
     const file = newSceneFile({ conditions: [] }, null);
 
     expect(JSON.stringify(file, null, 2)).toBe(expectedFile(null, GRID, newSceneTokenSettings(undefined, DEFAULT_TOKEN_SETTINGS)));
-    expect(file.state.tokenSettings).toMatchObject({ showNameplates: false, showHPBars: true, showStressBars: false });
+    expect(file.state.tokenSettings).toMatchObject({ showNameplates: true, showHPBars: true, showStressBars: false });
   });
 
   it('measures as its collection does and shows the bars its collection shows', () => {

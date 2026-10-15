@@ -589,6 +589,20 @@ export class InteractionController implements ITokenInteractionController {
       ),
     });
 
+    // Nameplate on the DM canvas only; the clicked token decides which way for the selection
+    const hideNameplate = currentToken?.hideNameplateFromPlayers === true;
+    entries.push({
+      type: 'item',
+      label: hideNameplate ? t('token.showNameplateToPlayers') : t('token.hideNameplateFromPlayers'),
+      icon: hideNameplate ? 'eye' : 'eye-off',
+      onClick: () => this.store.getState().updateTokens(
+        hideTargets.map((id) => ({
+          id,
+          changes: { hideNameplateFromPlayers: hideNameplate ? undefined : true },
+        })),
+      ),
+    });
+
     // Vision and carried light, for the selection the token belongs to
     if (!this.isPlayerView && dynamicLightingOn(this.obsApp)) {
       const lightPresets = mapLightPresets(this.obsApp, this.store.getState());

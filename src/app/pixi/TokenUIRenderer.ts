@@ -322,7 +322,11 @@ export class TokenUIRenderer {
 
     const resourcesKey = shown.map(({ definition, value, slot }) =>
       `${definition.key}:${slot}:${definition.name}:${definition.color}:${value.current}/${value.max}`).join('|');
-    const showNameplate = playerSettings ? playerSettings.showTokenNameplates : isNameplateVisible(token, tokenSettings?.showNameplates ?? false);
+    // The GM map shows a nameplate the scene or the token asks for. Players see it only while their switch is on and this token does not hide it.
+    const gmShowsNameplate = isNameplateVisible(token, tokenSettings?.showNameplates ?? true);
+    const showNameplate = playerSettings
+      ? playerSettings.showTokenNameplates && gmShowsNameplate && token.hideNameplateFromPlayers !== true
+      : gmShowsNameplate;
     const conditionsKey = `${token.conditions?.join(',') ?? ''}${JSON.stringify(token.conditionValues ?? {})}`;
     const defeated = isDefeated(token, definitions);
     // The ring's size setting moves the resize buttons, and with them the wheels
@@ -686,7 +690,7 @@ export class TokenUIRenderer {
     if (this.isEditingName || !this.currentToken || !this.store) return;
     
     // Only allow editing if nameplate is visible
-    const mapShowsNameplates = this.store.getState().tokenSettings?.showNameplates ?? false;
+    const mapShowsNameplates = this.store.getState().tokenSettings?.showNameplates ?? true;
     if (!isNameplateVisible(this.currentToken, mapShowsNameplates)) return;
     
     this.isEditingName = true;

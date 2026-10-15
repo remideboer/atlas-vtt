@@ -325,7 +325,7 @@ describe('importing a Universal VTT file', () => {
 
     const { scenePath } = arrived(await importUvttFile(b.deps, uvttFile(cryptFile()), COLLECTION));
 
-    expect(sceneState(b, scenePath).tokenSettings).toMatchObject({ showHPBars: true, showStressBars: false, showNameplates: false });
+    expect(sceneState(b, scenePath).tokenSettings).toMatchObject({ showHPBars: true, showStressBars: false, showNameplates: true });
   });
 });
 

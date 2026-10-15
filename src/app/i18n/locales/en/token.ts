@@ -14,6 +14,8 @@ export const token = {
   'token.hide': 'Hide',
   'token.hideBarsFromPlayers': 'Hide bars from players',
   'token.showBarsToPlayers': 'Show bars to players',
+  'token.hideNameplateFromPlayers': 'Hide nameplate from players',
+  'token.showNameplateToPlayers': 'Show nameplate to players',
   'token.saveEncounter': 'Save as Encounter',
   'token.addInitiative': 'Add to Initiative',
   'token.showStatblock': 'Show Statblock',

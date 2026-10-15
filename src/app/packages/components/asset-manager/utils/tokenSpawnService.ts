@@ -275,6 +275,11 @@ function placedHideBars(options?: Pick<SpawnTokenOptions, 'hideBarsFromPlayers'>
   return options?.hideBarsFromPlayers === false ? {} : { hideBarsFromPlayers: true as const };
 }
 
+/** A token placed on a scene shows its name to the GM and not to players, until the token menu says otherwise. */
+function placedNameplate(): { showNameplate: true; hideNameplateFromPlayers: true } {
+  return { showNameplate: true, hideNameplateFromPlayers: true };
+}
+
 /**
  * Spawn one or more copies of a single token asset on the map.
  */
@@ -307,6 +312,7 @@ export async function spawnTokenAsset(
     ...gridPosition(i, count, center.x, center.y, pitch, gridSystem, template.size || 1),
     ...(options?.isHidden && { isHidden: true }),
     ...hideBars,
+    ...placedNameplate(),
   }));
   return addSpawnedTokens(target, tokens);
 }
@@ -368,6 +374,7 @@ export async function spawnEncounterTokens(
       tokens.push({
         ...(await buildTokenData(ctx.app, pos, source, definitions, visionDefaults)),
         ...placedHideBars(),
+        ...placedNameplate(),
       });
     }
   }
@@ -406,6 +413,7 @@ export async function spawnSelectedTokens(
     tokens.push({
       ...(await buildTokenData(ctx.app, pos, source, definitions, visionDefaults)),
       ...placedHideBars(),
+      ...placedNameplate(),
     });
   }
 

@@ -102,7 +102,7 @@ describe('token spawning keeps asset defaults', () => {
   it('hides resource bars from the player view by default', async () => {
     const { ctx, spawned } = setup();
     await spawnTokenAsset(ctx, unframed, 1);
-    expect(spawned[0]).toMatchObject({ hideBarsFromPlayers: true });
+    expect(spawned[0]).toMatchObject({ hideBarsFromPlayers: true, showNameplate: true, hideNameplateFromPlayers: true });
   });
 
   it('keeps bars player-visible when spawn opts out', async () => {

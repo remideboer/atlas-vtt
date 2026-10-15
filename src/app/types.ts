@@ -52,6 +52,11 @@ export interface BaseToken {
    * Unset means both views show the bars when values exist.
    */
   hideBarsFromPlayers?: boolean;
+  /**
+   * When true, the nameplate stays on the GM map but is not drawn in the player view.
+   * Unset means players see it when the GM map shows it and their nameplate switch is on.
+   */
+  hideNameplateFromPlayers?: boolean;
   /** The side the token fights on where initiative runs by sides. Read with `sideOf`: unset, a token that sees is the players'. */
   side?: InitiativeSide;
   /** How the token sees when the scene has dynamic lighting. */

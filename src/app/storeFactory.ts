@@ -267,7 +267,7 @@ const createDefaultWidgets = (): WidgetSettings => ({
 // Initial state for each store instance
 /** Token display settings of a map that never set its own. */
 export const DEFAULT_TOKEN_SETTINGS: Readonly<ViewAtlasState['tokenSettings']> = {
-  showNameplates: false,
+  showNameplates: true,
   hiddenResources: [],
   showInstanceBadges: true,
   tokenRingSize: 1,
@@ -308,12 +308,7 @@ const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapP
   widgetSettings: createDefaultWidgets(),
   widgetValues: {}, // Widget values stored separately
   dmNotePath: null, // DM note linking
-  tokenSettings: {
-    showNameplates: false,
-    hiddenResources: [],
-    showInstanceBadges: true,
-    tokenRingSize: 1
-  },
+  tokenSettings: { ...DEFAULT_TOKEN_SETTINGS },
   initiative: createDefaultInitiativeState(),
   diceLog: [],
   pinnedNotePreviews: {},
@@ -353,6 +348,9 @@ function applyTokenUpdates(
   // Optional flags given as undefined are removed so they are not stored as nullish fields.
   if (Object.prototype.hasOwnProperty.call(normalized, 'hideBarsFromPlayers') && normalized.hideBarsFromPlayers !== true) {
     delete token.hideBarsFromPlayers;
+  }
+  if (Object.prototype.hasOwnProperty.call(normalized, 'hideNameplateFromPlayers') && normalized.hideNameplateFromPlayers !== true) {
+    delete token.hideNameplateFromPlayers;
   }
   if (artChanged && tokens) {
     token.instanceNumber = computeNextInstanceNumber(tokens, token.imagePath, token.id);
