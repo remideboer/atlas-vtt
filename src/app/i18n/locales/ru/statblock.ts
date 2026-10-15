@@ -10,6 +10,7 @@ export const statblock: Translation = {
   'statblock.editValue': 'Изменить значение',
   'statblock.increase': 'Увеличить: {label}',
   'statblock.locate': 'Найти {label} на карте',
+  'statblock.moveWindow': 'Переместить окно статблока',
   'statblock.pip': '{label}: {n} из {max}',
   'statblock.pipDamage': '{label}, урон: {n} из {max}',
   'statblock.pluginMissing': 'Установите и включите плагин Fantasy Statblocks, чтобы видеть статблоки.',

@@ -40,7 +40,9 @@
   }
 
   // Sticky (menu / double-click): stays until closed; drag from the header only.
+  // Opaque so the handle is not the map: the card inside already has the stroke.
   &--sticky {
+    background: var(--background-primary);
     overflow: hidden;
 
     .atlas-statblock-preview-window__header {
@@ -69,7 +71,7 @@
       white-space: nowrap;
       font-size: $font-ui-small;
       font-weight: var(--font-semibold, 600);
-      color: var(--text-muted);
+      color: var(--text-normal);
       pointer-events: none;
     }
 

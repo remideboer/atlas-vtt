@@ -10,6 +10,7 @@ export const statblock = {
   'statblock.editValue': 'Edit value',
   'statblock.increase': 'Increase {label}',
   'statblock.locate': 'Locate {label} on map',
+  'statblock.moveWindow': 'Move statblock window',
   'statblock.pip': '{label} {n} of {max}',
   'statblock.pipDamage': '{label} damage {n} of {max}',
   'statblock.pluginMissing': 'Install and enable the Fantasy Statblocks plugin to preview statblocks.',

@@ -100,6 +100,7 @@ export class StatblockPreviewWindow {
     if (!this.element) return;
     const header = this.element.createDiv({ cls: 'atlas-statblock-preview-window__header' });
     const drag = header.createDiv({ cls: 'atlas-statblock-preview-window__drag' });
+    drag.setAttribute('aria-label', t('statblock.moveWindow'));
     const title = this.vitals[0]?.name?.trim() || t('statblock.creature');
     drag.createSpan({ cls: 'atlas-statblock-preview-window__title', text: title });
 
