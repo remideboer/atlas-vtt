@@ -98,9 +98,9 @@ describe('Atlas search actions', () => {
     const input = screen.getByPlaceholderText('Search commands...');
     fireEvent.keyDown(input, { key: 'Tab' });
     fireEvent.keyDown(input, { key: 'Tab' });
-    expect(screen.getByRole('button', { name: /^Enter Player Mode/ }).classList.contains('atlas-focused')).toBe(true);
+    expect(document.querySelector('.atlas-command-item.atlas-focused')?.getAttribute('data-command')).toBe('toggle-player-mode');
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    expect(screen.getByRole('button', { name: /^Open Player Window/ }).classList.contains('atlas-focused')).toBe(true);
+    expect(document.querySelector('.atlas-command-item.atlas-focused')?.getAttribute('data-command')).toBe('open-player-window');
     fireEvent.keyDown(input, { key: 'ArrowUp' });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(onClose).toHaveBeenCalledOnce();

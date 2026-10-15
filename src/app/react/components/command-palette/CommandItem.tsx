@@ -23,6 +23,7 @@ export function CommandItem({ option, isFocused, onMouseEnter }: CommandItemProp
   return (
     <button
       type="button"
+      data-command={option.id}
       className={cn('atlas-command-item', isFocused && 'atlas-focused')}
       onClick={handleClick}
       onMouseEnter={onMouseEnter}
