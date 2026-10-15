@@ -19,6 +19,8 @@ interface TokenLibraryPickerContentProps {
   /** Shown on the blank disc option. */
   blankLabel: string;
   onPick: (pick: TokenLibraryPick) => void;
+  onTokenDragStart?: (token: PickableLibraryToken, event: React.DragEvent<HTMLElement>) => void;
+  onTokenDragEnd?: () => void;
 }
 
 /** Searchable grid of library tokens plus a blank disc; hosts own the modal chrome. */
@@ -27,7 +29,10 @@ export function TokenLibraryPickerContent({
   selectLabel,
   blankLabel,
   onPick,
+  onTokenDragStart,
+  onTokenDragEnd,
 }: TokenLibraryPickerContentProps): React.ReactElement {
+  const [dragged, setDragged] = useState(false);
   const [tokens, setTokens] = useState<PickableLibraryToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -96,12 +101,27 @@ export function TokenLibraryPickerContent({
                 <div
                   key={token.id}
                   className="token-picker-item"
-                  onClick={() => onPick(token)}
+                  draggable={Boolean(onTokenDragStart)}
+                  onDragStart={(event) => {
+                    setDragged(true);
+                    onTokenDragStart?.(token, event);
+                  }}
+                  onDragEnd={() => {
+                    onTokenDragEnd?.();
+                  }}
+                  onClick={() => {
+                    if (dragged) {
+                      setDragged(false);
+                      return;
+                    }
+                    onPick(token);
+                  }}
                 >
                   <div className="token-picker-image">
                     <img
                       src={token.imageUrl}
                       alt={token.name}
+                      draggable={false}
                       onError={(e) => { e.currentTarget.hide(); }}
                     />
                   </div>

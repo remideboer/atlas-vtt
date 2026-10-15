@@ -235,8 +235,9 @@
   color: var(--text-normal);
   text-align: left;
   cursor: pointer;
+  -webkit-user-drag: element;
 
-  &:hover:not(:disabled),
+  &:hover:not([aria-disabled='true']),
   &.is-active {
     background: var(--background-modifier-hover);
   }
@@ -245,7 +246,7 @@
     outline: 1px solid var(--interactive-accent);
   }
 
-  &:disabled {
+  &[aria-disabled='true'] {
     opacity: 0.5;
     cursor: default;
   }
@@ -472,6 +473,7 @@
   border-radius: var(--radius-m);
   cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-user-drag: element;
   
   &:hover:not(.token-picker-item-current) {
     background: var(--background-modifier-hover);

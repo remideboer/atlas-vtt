@@ -24,6 +24,8 @@ interface FiveEToolsPickerContentProps {
   busyUid: string | null;
   recentUids: readonly string[];
   statusRevision: number;
+  onMonsterDragStart?: (monster: FiveEMonster, event: React.DragEvent<HTMLElement>) => void;
+  onMonsterDragEnd?: () => void;
 }
 
 /** Searchable list of creatures from the local 5e.tools bestiary. */
@@ -35,6 +37,8 @@ export function FiveEToolsPickerContent({
   busyUid,
   recentUids,
   statusRevision,
+  onMonsterDragStart,
+  onMonsterDragEnd,
 }: FiveEToolsPickerContentProps): React.JSX.Element {
   const bestiary = useMemo(() => FiveEToolsBestiary.forApp(app), [app]);
   const listId = useId();
@@ -343,6 +347,8 @@ export function FiveEToolsPickerContent({
                         onBroken={markBroken(monster.uid)}
                         onFocusUid={setActiveUid}
                         onSelect={selectMonster}
+                        onDragStart={onMonsterDragStart}
+                        onDragEnd={onMonsterDragEnd}
                       />
                     </li>
                   ))}
@@ -371,6 +377,8 @@ export function FiveEToolsPickerContent({
                       onBroken={markBroken(monster.uid)}
                       onFocusUid={setActiveUid}
                       onSelect={selectMonster}
+                      onDragStart={onMonsterDragStart}
+                      onDragEnd={onMonsterDragEnd}
                     />
                   </li>
                 ))}
@@ -433,6 +441,8 @@ interface MonsterRowProps {
   onBroken: () => void;
   onFocusUid: (uid: string) => void;
   onSelect: (monster: FiveEMonster) => void;
+  onDragStart?: (monster: FiveEMonster, event: React.DragEvent<HTMLElement>) => void;
+  onDragEnd?: () => void;
 }
 
 const MonsterRow = memo(function MonsterRow({
@@ -446,17 +456,27 @@ const MonsterRow = memo(function MonsterRow({
   onBroken,
   onFocusUid,
   onSelect,
+  onDragStart,
+  onDragEnd,
 }: MonsterRowProps): React.JSX.Element {
   return (
-    <button
-      type="button"
+    <div
       id={`${listId}-${cssId(monster.uid)}`}
       role="option"
       aria-selected={active}
+      aria-disabled={busy || undefined}
+      tabIndex={busy ? -1 : 0}
       className={`token-picker-fivee__row${active ? ' is-active' : ''}${placing ? ' is-placing' : ''}`}
-      disabled={busy}
+      draggable={Boolean(onDragStart) && !busy}
       onFocus={() => onFocusUid(monster.uid)}
-      onClick={() => onSelect(monster)}
+      onClick={() => { if (!busy) onSelect(monster); }}
+      onKeyDown={(event) => {
+        if (busy || (event.key !== 'Enter' && event.key !== ' ')) return;
+        event.preventDefault();
+        onSelect(monster);
+      }}
+      onDragStart={(event) => onDragStart?.(monster, event)}
+      onDragEnd={() => onDragEnd?.()}
     >
       <MonsterThumb monster={monster} broken={brokenThumb} onBroken={onBroken} />
       <span className="token-picker-fivee__row-text">
@@ -470,7 +490,7 @@ const MonsterRow = memo(function MonsterRow({
       {(status === 'token' || status === 'note') && (
         <span className="token-picker-fivee__badge">{t('picker.fiveETools.inLibrary')}</span>
       )}
-    </button>
+    </div>
   );
 });
 
@@ -501,6 +521,7 @@ const MonsterThumb = memo(function MonsterThumb({
       <img
         src={tokenImageUrl(FIVE_E_TOOLS_IMAGE_BASE, monster.source, monster.name)}
         alt=""
+        draggable={false}
         loading={large ? 'eager' : 'lazy'}
         decoding="async"
         onError={onBroken}

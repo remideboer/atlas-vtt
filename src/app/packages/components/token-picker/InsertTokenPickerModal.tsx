@@ -1,8 +1,14 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { Modal, Notice, type App } from 'obsidian';
 import type { Root } from 'react-dom/client';
 import type { AtlasView } from '../../../atlas-view';
 import type { Point } from '../../../clipboard/mapObjectContent';
+import {
+  attachPickerMapDrop,
+  beginPickerTokenDrag,
+  endPickerTokenDrag,
+  type PickerTokenPayload,
+} from '../../../clipboard/pickerMapDrop';
 import { FiveEToolsBestiary } from '../../../fiveETools/FiveEToolsBestiary';
 import { insertFailureOf } from '../../../fiveETools/insertErrors';
 import { withRecentFiveEUid } from '../../../fiveETools/libraryStatus';
@@ -35,6 +41,7 @@ interface InsertTokenPickerContentProps {
   view: AtlasView;
   at: Point | null;
   onClose: () => void;
+  modalEl?: HTMLElement;
 }
 
 /** Session View, or the player window open on this scene tab. */
@@ -82,6 +89,7 @@ class InsertTokenPickerModal extends Modal {
           view: this.view,
           at: this.at,
           onClose: () => this.close(),
+          modalEl: this.modalEl,
         }),
       );
     }).catch((error) => {
@@ -126,7 +134,7 @@ function noticeForFiveEFailure(error: unknown): string {
   }
 }
 
-const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app, view, at, onClose }) => {
+export const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app, view, at, onClose, modalEl }) => {
   const settings = view.serviceManager.getSettingsService();
   const savedPicker = settings.getSetting('insertTokenPicker');
   const [insertHidden, setInsertHidden] = useState(
@@ -147,11 +155,11 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
   const barsLabelId = useId();
   const barsHintId = useId();
 
-  const spawnCtx = (): SpawnContext => ({
+  const spawnCtx = (point?: Point | null): SpawnContext => ({
     app,
     view,
     assetService: AssetService.getInstance(app),
-    ...(at && { at }),
+    ...(point ? { at: point } : at ? { at } : {}),
   });
 
   const collectionId = (): string => {
@@ -203,11 +211,9 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
       });
   };
 
-  const insertSelectedFiveEThenClose = (): void => {
-    if (busy) return;
-    const monster = selectedFiveE;
-    if (!monster) {
-      onClose();
+  const insertFiveE = (monster: FiveEMonster, point?: Point | null): void => {
+    if (busy) {
+      new Notice(t('picker.fiveETools.busy'));
       return;
     }
     setBusy(true);
@@ -216,7 +222,7 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
     const resources = monsterResources(monster, mapResources(assets, view.getStore().getState().mapPath));
     void FiveEToolsBestiary.forApp(app)
       .ensureTokenForMonster(monster, collectionId())
-      .then((token) => spawnTokenAsset(spawnCtx(), spawnAssetOf(token), 1, {
+      .then((token) => spawnTokenAsset(spawnCtx(point), spawnAssetOf(token), 1, {
         ...spawnOptions(),
         resources,
       }))
@@ -231,7 +237,6 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
         setStatusRevision((n) => n + 1);
         setBusy(false);
         setBusyUid(null);
-        onClose();
       })
       .catch((error) => {
         console.error('[InsertTokenPicker] Failed to insert 5e.tools creature:', error);
@@ -241,11 +246,52 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
       });
   };
 
-  const onDone = (): void => {
-    if (source === 'fiveETools') {
-      insertSelectedFiveEThenClose();
+  const placePayload = (point: Point, payload: PickerTokenPayload): void => {
+    if (payload.kind === 'library') {
+      if (busy) return;
+      setBusy(true);
+      void AssetService.getInstance(app).getAssetById(payload.id)
+        .then((asset) => {
+          if (!asset || asset.type !== 'token') {
+            setBusy(false);
+            return;
+          }
+          return spawnTokenAsset(spawnCtx(point), spawnAssetOf(asset), 1, spawnOptions()).then((ids) => {
+            afterSpawn(ids);
+            setBusy(false);
+          });
+        })
+        .catch((error) => {
+          console.error('[InsertTokenPicker] Failed to spawn token:', error);
+          new Notice(t('picker.insert.spawnFailed'));
+          setBusy(false);
+        });
       return;
     }
+    void FiveEToolsBestiary.forApp(app).getCatalog().then((catalog) => {
+      const monster = catalog.find((entry) => entry.uid === payload.uid);
+      if (monster) insertFiveE(monster, point);
+    }).catch((error) => {
+      console.error('[InsertTokenPicker] Failed to insert 5e.tools creature:', error);
+      new Notice(noticeForFiveEFailure(error));
+    });
+  };
+
+  const placeAtRef = useRef(placePayload);
+  placeAtRef.current = placePayload;
+
+  useEffect(() => {
+    if (!modalEl) return undefined;
+    const renderer = view.serviceManager.getRendererService();
+    return attachPickerMapDrop({
+      getCanvas: () => renderer.getRenderer()?.getCanvasElement() ?? renderer.getApp()?.canvas ?? null,
+      getViewport: () => renderer.getViewport(),
+      modalEl,
+      onPlace: (point, payload) => placeAtRef.current(point, payload),
+    });
+  }, [modalEl, view]);
+
+  const onDone = (): void => {
     onClose();
   };
 
@@ -368,16 +414,22 @@ const InsertTokenPickerContent: React.FC<InsertTokenPickerContentProps> = ({ app
           selectLabel={t('picker.insert.select')}
           blankLabel={t('picker.insert.blank')}
           onPick={onPick}
+          onTokenDragStart={(token, event) => beginPickerTokenDrag(event.dataTransfer ?? event.nativeEvent.dataTransfer, { kind: 'library', id: token.id }, modalEl)}
+          onTokenDragEnd={() => endPickerTokenDrag(modalEl)}
         />
       ) : (
         <FiveEToolsPickerContent
           app={app}
           onSelectionChange={setSelectedFiveE}
-          onConfirm={insertSelectedFiveEThenClose}
+          onConfirm={() => {
+            if (selectedFiveE) insertFiveE(selectedFiveE);
+          }}
           busy={busy}
           busyUid={busyUid}
           recentUids={recentUids}
           statusRevision={statusRevision}
+          onMonsterDragStart={(monster, event) => beginPickerTokenDrag(event.dataTransfer ?? event.nativeEvent.dataTransfer, { kind: 'fiveE', uid: monster.uid }, modalEl)}
+          onMonsterDragEnd={() => endPickerTokenDrag(modalEl)}
         />
       )}
     </div>
