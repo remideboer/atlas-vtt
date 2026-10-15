@@ -3,6 +3,8 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 export interface PlayerWindowState {
   isOpen: boolean;
   isFrozen: boolean;
+  /** Pause or a camera freeze is holding the picture players see. */
+  isPaused: boolean;
   /**
    * Scene tab whose map the open player window shows, or null while it is closed. The scene
    * players are shown is the presented scene (`presentedScene.ts`), which needs no window.
@@ -15,6 +17,7 @@ export type PlayerWindowStore = StoreApi<PlayerWindowState>;
 const INITIAL_STATE: PlayerWindowState = {
   isOpen: false,
   isFrozen: false,
+  isPaused: false,
   shownTabId: null,
 };
 

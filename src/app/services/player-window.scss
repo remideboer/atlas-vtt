@@ -140,29 +140,6 @@ body.atlas-player-window {
     display: none !important;
   }
 
-  // Top left: the widgets hold the top right corner.
-  #atlas-player-freeze-indicator {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    background: rgba(0, 0, 0, 0.6);
-    color: rgba(255, 255, 255, 0.9);
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    z-index: 2000;
-    pointer-events: none;
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
 }
 
 .atlas-local-player-content {

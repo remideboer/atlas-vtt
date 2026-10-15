@@ -10,6 +10,7 @@ export const player = {
   'player.paused': 'Camera paused',
   'player.pauseView': 'Pause player view',
   'player.viewPaused': 'Player view paused',
+  'player.viewLive': 'Player view live',
   'player.viewResumed': 'Player view resumed',
   'player.resumeOnScene': 'Switch back to the scene players are watching to resume the player view',
   'player.title': 'Atlas player view',

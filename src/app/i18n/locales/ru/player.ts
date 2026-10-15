@@ -9,6 +9,7 @@ export const player: Translation = {
   'player.paused': 'Камера на паузе',
   'player.pauseView': 'Пауза экрана игроков',
   'player.viewPaused': 'Экран игроков на паузе',
+  'player.viewLive': 'Экран игроков в эфире',
   'player.viewResumed': 'Экран игроков снова в эфире',
   'player.resumeOnScene': 'Вернитесь к сцене, которую смотрят игроки, чтобы снять паузу',
   'player.title': 'Atlas: экран игроков',

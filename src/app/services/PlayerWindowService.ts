@@ -358,6 +358,7 @@ export class PlayerWindowService {
       return false;
     }
     new Notice(t('player.viewPaused'));
+    this.publishStatus();
     return true;
   }
 
@@ -422,7 +423,7 @@ export class PlayerWindowService {
     if (this.heldFrame) return;
     this.heldRotation = this.presentation.rotation;
     this.heldFrame = this.snapshotPlayerFrame();
-    this.updateFreezeIndicator();
+    this.publishStatus();
   }
 
   /**
@@ -482,7 +483,7 @@ export class PlayerWindowService {
     }
     this.heldFrame = null;
     this.syncHeldTransform();
-    this.updateFreezeIndicator();
+    this.publishStatus();
     this.followSource();
   }
 
@@ -556,8 +557,7 @@ export class PlayerWindowService {
   private setFrozenCamera(camera: PlayerCameraState | null): void {
     this.frozenCamera = camera ? framedCamera({ ...camera }, this.streamSource?.getScreen?.()) : null;
     this.mirror?.markStale();
-    this.updateFreezeIndicator();
-    playerWindowStore.setState({ isFrozen: this.isFrozen() });
+    this.publishStatus();
     this.playerView?.updateSession({
       frozen: this.isFrozen(),
       ...(this.frozenCamera ? { camera: { ...this.frozenCamera } } : {}),
@@ -578,12 +578,13 @@ export class PlayerWindowService {
     this.playerView?.updateSession({ camera: { ...pinned } });
   }
 
-  private updateFreezeIndicator(): void {
-    if (!this.playerWindow || this.playerWindow.closed) return;
-    const indicator = this.playerWindow.document.getElementById('atlas-player-freeze-indicator');
-    if (indicator) {
-      indicator.style.display = this.frozenCamera || this.heldFrame ? 'flex' : 'none';
-    }
+  /** Mirror open / pause / freeze onto the store the DM toolbar reads. */
+  private publishStatus(): void {
+    playerWindowStore.setState({
+      isOpen: this.isWindowOpen(),
+      isFrozen: this.isFrozen(),
+      isPaused: this.isPlayerPaused(),
+    });
   }
 
   /** Fades the frame players see into the next scene, the same transition the DM view plays. */
@@ -684,25 +685,6 @@ export class PlayerWindowService {
         this.app.workspace.offref(collectionChanged);
       };
 
-      // Create freeze indicator
-      const freezeIndicator = content.createDiv();
-      freezeIndicator.id = 'atlas-player-freeze-indicator';
-      const freezeIcon = freezeIndicator.createSvg('svg', { attr: {
-        width: 16,
-        height: 16,
-        viewBox: '0 0 24 24',
-        fill: 'none',
-        stroke: 'currentColor',
-        'stroke-width': 2,
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-      } });
-      freezeIcon.createSvg('line', { attr: { x1: 2, y1: 12, x2: 22, y2: 12 } });
-      freezeIcon.createSvg('line', { attr: { x1: 12, y1: 2, x2: 12, y2: 22 } });
-      freezeIcon.createSvg('path', { attr: { d: 'M20 16l-4-4 4-4M4 8l4 4-4 4M16 4l-4 4-4-4M8 20l4-4 4 4' } });
-      freezeIndicator.createSpan({ text: t('player.paused') });
-      freezeIndicator.style.display = this.frozenCamera || this.heldFrame ? 'flex' : 'none';
-      
       // Create title bar container
       const titleBarContainer = content.createDiv();
       titleBarContainer.id = 'atlas-player-titlebar-container';
@@ -722,7 +704,7 @@ export class PlayerWindowService {
       this.syncCrisp();
       // Start mirroring
       this.startMirroring();
-      playerWindowStore.setState({ isOpen: true });
+      this.publishStatus();
 
       // Cleanup on close
       this.playerWindow.addEventListener('beforeunload', this.boundHandleBeforeUnload);

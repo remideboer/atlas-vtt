@@ -178,6 +178,33 @@ describe('player camera freeze', () => {
     expect(lastFrame().centerY).toBeCloseTo(before.centerY - 25, 4);
   });
 
+  it('tells the DM a pause is on, and never paints a pause banner in the player window', () => {
+    const { service, source, setDmCamera, nextFrame } = setup();
+    source.store?.setState({ mapLoaded: true, isMapLoading: false, mapPath: 'scene-a.atlasmap' });
+    setDmCamera({ centerX: 100, centerY: 200, scale: 1 });
+    nextFrame();
+    const doc = service.getWindow()?.document;
+    expect(playerWindowStore.getState()).toMatchObject({ isOpen: true, isPaused: false });
+    expect(doc?.getElementById('atlas-player-freeze-indicator')).toBeNull();
+
+    expect(service.togglePlayerPause()).toBe(true);
+    expect(playerWindowStore.getState().isPaused).toBe(true);
+    expect(doc?.getElementById('atlas-player-freeze-indicator')).toBeNull();
+
+    expect(service.togglePlayerPause()).toBe(false);
+    expect(playerWindowStore.getState().isPaused).toBe(false);
+  });
+
+  it('treats a camera freeze as a paused player view for the DM', () => {
+    const { service, setDmCamera, nextFrame } = setup();
+    setDmCamera({ centerX: 100, centerY: 200, scale: 1 });
+    nextFrame();
+    service.toggleCameraFreeze();
+    expect(playerWindowStore.getState()).toMatchObject({ isFrozen: true, isPaused: true });
+    service.toggleCameraFreeze();
+    expect(playerWindowStore.getState()).toMatchObject({ isFrozen: false, isPaused: false });
+  });
+
   it('resuming a pause places the GM map on the picture players were showing', () => {
     const { service, source, setDmCamera, nextFrame, lastFrame } = setup();
     source.showCamera = (camera): void => { setDmCamera(camera); };

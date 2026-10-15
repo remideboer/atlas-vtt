@@ -11,6 +11,7 @@ import { CommandPalette } from "../../react/components/CommandPalette"
 import AssetManager from "./asset-manager/AssetManager"
 import { useAtlasUI } from "src/app/react/root/AtlasUIContext"
 import { Toggle } from "./primitives/Toggle"
+import { PlayerViewStatus } from "./toolbar/PlayerViewStatus"
 import { isAtlasToolAvailable } from "../../tools/toolAvailability"
 import { useExperimentalFeature } from "../../react/hooks/useExperimentalFeature"
 import type { ExperimentalFeatureId } from "../../experimental/experimentalFeatures"
@@ -188,14 +189,17 @@ export const MainToolbar = forwardRef<HTMLDivElement, MainToolbarProps>(({ viewI
               {...(dm && { hiddenIds, motion: editor.motion })}
               // The GM view switch keeps the bar's last place, after "More tools".
               end={dm && (
-                <Toggle
-                  value={isGMView}
-                  onChange={toggleGMView}
-                  iconOn={Eye}
-                  iconOff={EyeOff}
-                  tooltipOn={t('toolbar.gmView', { key: hotkeyLabel('gmView') })}
-                  tooltipOff={t('toolbar.sessionView', { key: hotkeyLabel('gmView') })}
-                />
+                <>
+                  <PlayerViewStatus />
+                  <Toggle
+                    value={isGMView}
+                    onChange={toggleGMView}
+                    iconOn={Eye}
+                    iconOff={EyeOff}
+                    tooltipOn={t('toolbar.gmView', { key: hotkeyLabel('gmView') })}
+                    tooltipOff={t('toolbar.sessionView', { key: hotkeyLabel('gmView') })}
+                  />
+                </>
               )}
             />
             <AnimatePresence>
