@@ -16,6 +16,7 @@ import type { ResourceDefsProvider, ResourceViewer, VisibleResource } from '../r
 import { isDefeated, isSpent } from '../resources/resourceValues';
 import { shapeOf, visibleResources } from '../resources/visibleResources';
 import { destroyTree } from './utils/destroyTree';
+import { canvasBadgeColors, isDarkTheme } from './utils/canvasBadgeColors';
 import { computeTokenStrokeWidth, NAMEPLATE_HEIGHT, restingTokenUIScale, selectedTokenUIScale } from './token-renderer/tokenSizing';
 import { getTokenRingCenterRadius } from './token-renderer/tokenRingMetrics';
 import { ValueTransition } from './utils/ValueTransition';
@@ -386,17 +387,15 @@ export class TokenUIRenderer {
 
     // Only show nameplate if enabled AND we have a name to display
     if (showNameplate && displayName) {
-      // Get theme colors
-      const isDarkMode = document.body.classList.contains('theme-dark');
-      const bgColor = isDarkMode ? 0x2a2a2a : 0xe3e3e3;
-      const strokeColor = isDarkMode ? 0xffffff : 0x000000;
-      
+      const { background, stroke } = canvasBadgeColors();
+
       this.nameText.text = displayName;
       // In PIXI v8, text updates automatically when setting the text property
       const textBounds = this.nameText.getLocalBounds();
-      
-      this.nameText.alpha = 0.85;
-      
+
+      if (this.nameText.style.fill !== stroke) this.nameText.style.fill = stroke;
+      this.nameText.alpha = 1;
+
       // Badge dimensions - use fixed sizes  
       const scaledTextScale = 0.333; // Fixed text scale
       const scaledWidth = textBounds.width * scaledTextScale;
@@ -411,11 +410,11 @@ export class TokenUIRenderer {
       // Draw rounded rectangle background
       this.nameBadge.clear();
       this.nameBadge.roundRect(-badgeWidth/2, nameY - badgeHeight/2, badgeWidth, badgeHeight, badgeRadius)
-        .fill({ color: bgColor, alpha: 1 }); // Fully opaque background
+        .fill({ color: background, alpha: 1 }); // Fully opaque background
       
       // Add border — softened so it doesn't overpower the nameplate
       this.nameBadge.roundRect(-badgeWidth/2, nameY - badgeHeight/2, badgeWidth, badgeHeight, badgeRadius)
-        .stroke({ width: 0.5, color: strokeColor, alpha: isDarkMode ? 0.4 : 0.3 });
+        .stroke({ width: 0.5, color: stroke, alpha: isDarkTheme() ? 0.4 : 0.3 });
       
       // Position text in center of badge
       this.nameText.anchor.set(0.5, 0.5);
@@ -769,11 +768,8 @@ export class TokenUIRenderer {
     
     // Function to update both badge size and cursor position
     const updateNameBadgeAndCursor = () => {
-      // Get theme colors (same as normal badge)
-      const isDarkMode = document.body.classList.contains('theme-dark');
-      const bgColor = isDarkMode ? 0x2a2a2a : 0xe3e3e3;
-      const strokeColor = isDarkMode ? 0xffffff : 0x000000;
-      
+      const { background, stroke } = canvasBadgeColors();
+
       // Get current text bounds
       const textBounds = this.nameText.getLocalBounds();
       
@@ -787,11 +783,13 @@ export class TokenUIRenderer {
       
       // Get current name badge position
       const nameY = this.nameText.position.y;
+
+      if (this.nameText.style.fill !== stroke) this.nameText.style.fill = stroke;
       
       // Redraw the name badge with new size and editing glow
       this.nameBadge.clear();
       this.nameBadge.roundRect(-badgeWidth/2, nameY - badgeHeight/2, badgeWidth, badgeHeight, badgeRadius)
-        .fill({ color: bgColor, alpha: 1 }); // Fully opaque background
+        .fill({ color: background, alpha: 1 }); // Fully opaque background
       
       // Add accent color stroke during editing
       if (this.isEditingName) {
@@ -803,7 +801,7 @@ export class TokenUIRenderer {
       } else {
         // Normal subtle border when not editing
         this.nameBadge.roundRect(-badgeWidth/2, nameY - badgeHeight/2, badgeWidth, badgeHeight, badgeRadius)
-          .stroke({ width: 0.5, color: strokeColor, alpha: isDarkMode ? 0.4 : 0.3 });
+          .stroke({ width: 0.5, color: stroke, alpha: isDarkTheme() ? 0.4 : 0.3 });
       }
       
       // Update cursor position based on actual cursor position in the input
