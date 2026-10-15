@@ -10,7 +10,10 @@ vi.mock('../../src/app/packages/components/asset-manager/token-creator/useAssetC
 vi.mock('../../src/app/packages/components/asset-manager/token-creator/useAssetTags', () => ({ useAssetTags: () => ({ tags: ['Enemy'], createTag: vi.fn(), isCreatingTag: false }) }));
 vi.mock('../../src/app/services/StatblockTokenImportService', () => ({ StatblockTokenImportService: class { scan = fake.scan; } }));
 vi.mock('../../src/app/packages/components/asset-manager/token-creator/saveTokenPreviews', () => ({ saveTokenPreviews: fake.save }));
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({ convertForPreview: async () => ({ image: new Blob(['art']), thumbnail: null, preview: null, sourcePreview: null }) }));
+vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
+  convertForPreview: async () => ({ image: new Blob(['art']), thumbnail: null, preview: null, sourcePreview: null }),
+  colorKeyOf: () => undefined,
+}));
 stubLayout({ width: 800, height: 600 });
 afterEach(cleanup);
 beforeEach(() => {

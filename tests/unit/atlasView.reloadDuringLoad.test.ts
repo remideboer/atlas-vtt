@@ -63,6 +63,24 @@ function harness(holdImage: boolean): Harness {
     temporalCache: new Map(), viewportCache: new Map(),
     _serviceManager: { getMapService: () => mapService, getRendererService: () => rendererService, flushSceneThumbnail: vi.fn() },
   });
+  const proto = AtlasView.prototype as unknown as {
+    sceneFile(this: AtlasView): TFile | null;
+    loadedTabId(this: AtlasView): string | null;
+    saveViewportState(this: AtlasView, tabId: string): void;
+    flushPendingSaves(this: AtlasView): Promise<void>;
+    performSceneLoad(this: AtlasView, file: TFile, camera?: unknown): Promise<boolean>;
+    showLoadedTab(this: AtlasView): void;
+  };
+  Object.assign(view, {
+    sceneFile(): TFile | null { return proto.sceneFile.call(view); },
+    loadedTabId(): string | null { return proto.loadedTabId.call(view); },
+    saveViewportState(tabId: string): void { proto.saveViewportState.call(view, tabId); },
+    flushPendingSaves(): Promise<void> { return proto.flushPendingSaves.call(view); },
+    performSceneLoad(file: TFile, camera?: unknown): Promise<boolean> {
+      return proto.performSceneLoad.call(view, file, camera);
+    },
+    showLoadedTab(): void { proto.showLoadedTab.call(view); },
+  });
   const viewInternals = view as unknown as { performSceneLoad(file: TFile): Promise<boolean> };
   return {
     files, store, eventBus, view,

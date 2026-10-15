@@ -14,6 +14,7 @@ vi.mock('../../src/app/pixi/mapImage/MapImage', () => ({
   MapImage: class {
     readonly worldRect = null;
     constructor(readonly deps: MapImageDeps) { made.push(deps); }
+    setOrientation(): void {}
     load(): Promise<void> { return Promise.resolve(); }
   },
 }));

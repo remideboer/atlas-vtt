@@ -26,7 +26,7 @@ vi.mock('../../src/app/import/uvtt/runUvttImport', () => ({ runUvttImport: vi.fn
 vi.mock('../../src/app/packages/components/asset-manager/token-creator/TokenPreviewCard', () => ({ TokenPreviewCard: () => null }));
 vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => {
   const converted = { image: new Blob(), thumbnail: null, preview: null, sourcePreview: null };
-  return { convertForPreview: async () => converted, cropTokenImage: async () => converted, optimizeUpload: async () => converted };
+  return { convertForPreview: async () => converted, cropTokenImage: async () => converted, optimizeUpload: async () => converted, colorKeyOf: () => undefined };
 });
 
 const crypt = new File(['{}'], 'Crypt.dd2vtt');

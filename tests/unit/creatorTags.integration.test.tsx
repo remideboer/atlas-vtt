@@ -9,7 +9,12 @@ import CreateSceneModal from '../../src/app/packages/components/asset-manager/Cr
 
 const { converted } = vi.hoisted(() => ({ converted: { image: { arrayBuffer: async () => new ArrayBuffer(1) } as Blob, thumbnail: null, preview: null, sourcePreview: null } }));
 vi.mock('../../src/app/packages/components/asset-manager/token-creator/TokenPreviewCard', () => ({ TokenPreviewCard: () => null }));
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({ convertForPreview: async () => converted, cropTokenImage: async () => converted, optimizeUpload: async () => converted }));
+vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
+  convertForPreview: async () => converted,
+  cropTokenImage: async () => converted,
+  optimizeUpload: async () => converted,
+  colorKeyOf: () => undefined,
+}));
 
 const service = {
   initialize: vi.fn().mockResolvedValue(undefined),
@@ -65,7 +70,12 @@ it.each(['token', 'map'] as const)('persists selected and newly created tags whe
   mount(<TokenCreator isOpen onClose={() => {}} mode={mode} />);
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['art'], 'Test.png', { type: 'image/png' })] } });
   await selectAndCreateTags(mode === 'token' ? 'tokens' : 'maps');
-  fireEvent.click(screen.getByRole('button', { name: /^Create/ }));
+  const create = await screen.findByRole('button', {
+    name: (accessibleName, element) => Boolean(element.closest('footer') && /^Create/.test(accessibleName)),
+    hidden: false,
+  });
+  await waitFor(() => expect((create as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(create);
   await waitFor(() => expect(service.addAssets).toHaveBeenCalledWith([expect.objectContaining({ type: mode, tags: ['Existing', 'New tag'] })]));
 });
 

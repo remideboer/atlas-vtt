@@ -8,7 +8,11 @@ import type { ProcessedImage } from '../../src/app/imageProcessing/imageProcessi
 import { createInMemoryApp } from '../mocks/inMemoryVault';
 
 const crop = vi.hoisted(() => vi.fn());
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({ cropTokenImage: crop, optimizeUpload: vi.fn() }));
+vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
+  cropTokenImage: crop,
+  optimizeUpload: vi.fn(),
+  colorKeyOf: () => undefined,
+}));
 
 const bytes = (text: string): Blob => ({ arrayBuffer: async () => new TextEncoder().encode(text).buffer } as Blob);
 const converted = (name: string): ProcessedImage => ({ image: bytes(`${name} image`), thumbnail: bytes(`${name} thumbnail`), preview: null, sourcePreview: null });

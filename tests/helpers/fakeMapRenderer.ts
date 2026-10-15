@@ -16,6 +16,7 @@ export interface FakeMapImage {
   worldRect: { x: number; y: number; width: number; height: number } | null;
   load: ReturnType<typeof vi.fn<(source: MapImageSource) => Promise<void>>>;
   whenCameraReady: ReturnType<typeof vi.fn<(timeoutMs: number) => Promise<void>>>;
+  setOrientation: ReturnType<typeof vi.fn<(orientation: unknown) => void>>;
   clear: ReturnType<typeof vi.fn<() => void>>;
 }
 
@@ -34,6 +35,7 @@ export function fakeMapRenderer(onLoad: (source: MapImageSource) => void = () =>
     worldRect: { x: 0, y: 0, width: 1400, height: 1400 },
     load: vi.fn(async (source: MapImageSource) => onLoad(source)),
     whenCameraReady: vi.fn(() => Promise.resolve()),
+    setOrientation: vi.fn(),
     clear: vi.fn(),
   };
   return {

@@ -11,7 +11,11 @@ import { AssetService } from '../../src/app/services/AssetService';
 import type { TokenPreview } from '../../src/app/packages/components/asset-manager/token-creator/types';
 import type { TokenGroupContainer } from '../../src/app/pixi/token-renderer/types';
 const crop = vi.hoisted(() => vi.fn());
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({ cropTokenImage: crop, optimizeUpload: vi.fn() }));
+vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
+  cropTokenImage: crop,
+  optimizeUpload: vi.fn(),
+  colorKeyOf: () => undefined,
+}));
 afterEach(cleanup);
 
 it('preserves legacy portraits and removes the frame for an explicit opt-out', () => {

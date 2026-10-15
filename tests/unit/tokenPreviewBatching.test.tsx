@@ -4,7 +4,10 @@ import type { ProcessedImage } from '../../src/app/imageProcessing/imageProcessi
 import { useTokenPreviews } from '../../src/app/packages/components/asset-manager/token-creator/useTokenPreviews';
 
 const convert = vi.hoisted(() => vi.fn());
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({ convertForPreview: convert }));
+vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
+  convertForPreview: convert,
+  colorKeyOf: () => undefined,
+}));
 
 const result = (): ProcessedImage => ({ image: new Blob(['token']), thumbnail: null, preview: null, sourcePreview: new Blob(['card']) });
 const files = (count: number): File[] => Array.from({ length: count }, (_, index) => new File(['art'], `token-${index}.png`, { type: 'image/png' }));
@@ -47,7 +50,7 @@ it('shows the whole image on the card and keeps the default crop for saving', as
   act(() => hook.current.addFiles(files(1)));
   await act(async () => { await vi.advanceTimersByTimeAsync(200); });
   const [preview] = hook.current.previews;
-  expect(convert).toHaveBeenCalledWith(preview!.file, 'token', true, expect.any(AbortSignal));
+  expect(convert).toHaveBeenCalledWith(preview!.file, 'token', true, expect.any(AbortSignal), undefined);
   expect(URL.createObjectURL).toHaveBeenCalledWith(converted.sourcePreview);
   expect(await hook.current.waitForOptimized(preview!.id, 'default-crop')).toBe(converted);
   expect(await hook.current.waitForOptimized(preview!.id, 'whole')).toBeUndefined();

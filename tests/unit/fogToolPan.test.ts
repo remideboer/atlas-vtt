@@ -52,7 +52,7 @@ it('paints fog with the primary button only, so a right-drag pans', () => {
 
   tool.onPointerUp();
   expect(tool.stroke.active).toBe(false);
-  // The rectangle's corners snap to the 70 px grid's.
+  // Snap is off by default: a press at 140 and a move to 215 is a 75×75 free rectangle.
   expect(addFogOperation).toHaveBeenCalledOnce();
-  expect(addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: false, x: 140, y: 140, width: 70, height: 70 });
+  expect(addFogOperation).toHaveBeenCalledWith({ type: 'rectangle', isErasing: false, x: 140, y: 140, width: 75, height: 75 });
 });

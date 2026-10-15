@@ -9,7 +9,11 @@ import { createInMemoryApp } from '../mocks/inMemoryVault';
 const cropTokenImage = vi.hoisted(() => vi.fn(async () => ({
   image: { arrayBuffer: async () => new TextEncoder().encode('cropped').buffer } as Blob, thumbnail: null, preview: null,
 })));
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({ cropTokenImage }));
+vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
+  cropTokenImage,
+  colorKeyOf: () => undefined,
+  optimizeUpload: vi.fn(),
+}));
 const thumbnails = vi.hoisted(() => {
   const thumbnail = async (path: string): Promise<string> => `thumbs/${path}`;
   return { tryCreateForImage: thumbnail, tryThumbnailForImage: thumbnail, tryDiscard: vi.fn(async () => {}) };
@@ -44,7 +48,7 @@ const stored = 'atlas-vtt/collections/Default/tokens/Acolyte.webp';
 it('crops the stored image into its own file when the ring is turned on', async () => {
   const { app, files, assetService, token, save } = await setup(stored, false);
   expect(await save()).toBe(1);
-  expect(cropTokenImage).toHaveBeenCalledWith(expect.any(File), STORED_IMAGE_SCALE, { x: 0, y: 0 }, undefined);
+  expect(cropTokenImage).toHaveBeenCalledWith(expect.any(File), STORED_IMAGE_SCALE, { x: 0, y: 0 }, undefined, false, undefined);
   expect(files.get(stored)).toBe('cropped');
   expect(app.vault.createBinary).not.toHaveBeenCalled();
   expect(await assetService.getAssetById(token.id)).toMatchObject({ imagePath: stored, showRing: true });
@@ -53,7 +57,7 @@ it('crops the stored image into its own file when the ring is turned on', async 
 it('crops the stored image where the edit moved or zoomed it', async () => {
   const { files, save } = await setup(stored, true);
   expect(await save({ imageScale: 1.2, imagePosition: { x: 0.1, y: -0.05 } })).toBe(1);
-  expect(cropTokenImage).toHaveBeenCalledWith(expect.any(File), 1.2, { x: 0.1, y: -0.05 }, undefined);
+  expect(cropTokenImage).toHaveBeenCalledWith(expect.any(File), 1.2, { x: 0.1, y: -0.05 }, undefined, false, undefined);
   expect(files.get(stored)).toBe('cropped');
 });
 
