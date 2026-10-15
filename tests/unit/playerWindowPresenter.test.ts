@@ -325,6 +325,17 @@ describe('PlayerWindowPresenter', () => {
 
       expect(serviceMock.releaseHeldFrame).not.toHaveBeenCalled();
     });
+
+    test('sending the browsed-to tab replaces the held scene in the open window', async () => {
+      const { view, dungeon } = await presentTavernThenBrowse();
+      serviceMock.presentCanvas.mockClear();
+
+      await presentTab(app, view, dungeon);
+
+      expect(serviceMock.presentCanvas).toHaveBeenCalledWith(frameSourceFor(view.atlasStore), dungeon);
+      expect(presentedSceneOf(app).get()?.tabId).toBe(dungeon);
+      expect(playerWindowStore.getState().shownTabId).toBe(dungeon);
+    });
   });
 
   test('restores the presented scene into the existing popout and returns the DM to their tab', async () => {
