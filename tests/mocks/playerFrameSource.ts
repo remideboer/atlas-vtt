@@ -42,9 +42,9 @@ export const FRAME: PlayerFrame = { width: 1280, height: 720, resolution: 1, ant
  * (`playerFrames`): `render` is the frame's render, and the frame comes in one piece.
  */
 export function fakePlayerFrames(render: () => void = () => undefined): {
-  canRender(): boolean; render(): void; copy(copy: (piece: FramePiece) => void): void; release(): void; destroy(): void;
+  canRender(): boolean; render(): void; copy(copy: (piece: FramePiece) => void): void; release(): void; destroy(): void; setClearColor(color: number): void;
 } {
-  return { canRender: () => true, render, copy: (copy) => copy(framePiece(FRAME)), release: vi.fn(), destroy: vi.fn() };
+  return { canRender: () => true, render, copy: (copy) => copy(framePiece(FRAME)), release: vi.fn(), destroy: vi.fn(), setClearColor: vi.fn() };
 }
 
 /** The part of a viewport a players' frame moves. */

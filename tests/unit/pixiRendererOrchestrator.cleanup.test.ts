@@ -19,6 +19,7 @@ function createHarness(eventBus: EventEmitter) {
   const manager = {
     init: vi.fn(),
     getViewport: () => viewport,
+    setBlankContextMenu: vi.fn(),
     destroy: () => viewport.destroy({ children: true }),
   };
   const renderer = new PixiRendererOrchestrator({} as any, manager as any, eventBus, store as any, 'test');

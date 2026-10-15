@@ -37,6 +37,7 @@ async function showScene(size = 1400): Promise<Harness> {
     init: vi.fn(),
     getViewport: () => viewport,
     getApp: () => ({ renderer: { resolution: 1 } }),
+    setBlankContextMenu: vi.fn(),
     destroy: vi.fn(),
   };
   const events = new EventEmitter();
