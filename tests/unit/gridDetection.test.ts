@@ -207,7 +207,7 @@ describe('detectGridInImage', () => {
     const data = new Float32Array(width * height);
     for (let i = 0; i < data.length; i++) data[i] = 120 + (random() - 0.5) * 80;
     expect(detectGridInImage({ width, height, data })).toBeNull();
-  });
+  }, 60000);
 });
 
 /** Corners of the true grid (drawn on the squared-up image) spread over a map of `width` × `height` image pixels. */

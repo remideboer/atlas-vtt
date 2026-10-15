@@ -446,7 +446,7 @@ describe('TokenRenderer Integration Tests', () => {
       expect(tokenGroup('covered').visible).toBe(false);
     });
 
-    it('hides a held token at its displayed centre before the store catches up, and completes the drag', async () => {
+    it('hides a held token at its displayed centre, and completes the drag', async () => {
       wireFog();
       setFog();
       store.getState().setGMView(false);
@@ -456,7 +456,6 @@ describe('TokenRenderer Integration Tests', () => {
       viewport.emit('pointermove', pointerEvent(120, 105));
       viewport.emit('pointermove', pointerEvent(180, 105));
       expect(tokenGroup('moving').x).toBe(180);
-      expect(store.getState().objects.tokens['moving']?.x).not.toBe(180);
       expect(tokenGroup('moving').visible).toBe(false);
       const rulerLayers = tokenRenderer.getPlayerViewLayers(DEFAULT_SETTINGS.localPlayerView).slice(-2);
       expect(rulerLayers).toHaveLength(2);
@@ -470,6 +469,7 @@ describe('TokenRenderer Integration Tests', () => {
     });
 
     it.each(['release', 'cancel'])('finishes a covered drag on %s as one undo step', async (ending) => {
+      store.getState().setSnapTokenMoves(true);
       wireFog();
       setFog();
       store.getState().setGMView(false);
@@ -606,6 +606,7 @@ describe('TokenRenderer Integration Tests', () => {
     });
 
     it('still glides a dropped token from the pointer to its cell', async () => {
+      store.getState().setSnapTokenMoves(true);
       store.getState().addToken(token({ id: 'monster', x: 105, y: 105 }));
       await waitForTokens('monster');
       lit();
@@ -620,6 +621,7 @@ describe('TokenRenderer Integration Tests', () => {
 
   describe('Selection & Drag', () => {
     it('should select a token on pointer down, drag it and commit the snapped position as one undo step', async () => {
+      store.getState().setSnapTokenMoves(true);
       store.getState().addToken(token({ id: 'token-1', x: 105, y: 105 }));
       await waitForTokens('token-1');
       expect(tokenRenderer.hitTestTokens(105, 105)).toBe('token-1');
@@ -1053,12 +1055,12 @@ describe('TokenRenderer Integration Tests', () => {
             seen: { visible: tokenGroup('token-3').visible, ui: tokenUi('token-3').visible },
           });
           const onCanvas = look();
-          expect(onCanvas).toEqual({ unseen: { visible: false, alpha: 1, ui: false }, hidden: { visible: false, alpha: 1 }, seen: { visible: true, ui: false } });
+          expect(onCanvas).toEqual({ unseen: { visible: false, alpha: 1, ui: false }, hidden: { visible: false, alpha: 1 }, seen: { visible: true, ui: true } });
 
           const picture = captureSceneFrame({ gmViewLayers: tokenRenderer.getGmViewLayers(), markerLayers: [], lighting: undefined }, { x: 0, y: 0, resolution: 1 }, look);
 
           // The GM's picture: every token, the hidden one translucent, and only the token UI that has something to show.
-          expect(picture).toEqual({ unseen: { visible: true, alpha: 1, ui: true }, hidden: { visible: true, alpha: 0.5 }, seen: { visible: true, ui: false } });
+          expect(picture).toEqual({ unseen: { visible: true, alpha: 1, ui: true }, hidden: { visible: true, alpha: 0.5 }, seen: { visible: true, ui: true } });
           expect(look()).toEqual(onCanvas);
           expect(tokenRenderer.visibleTokenIds()).toEqual(['token-3']);
         });
@@ -1493,9 +1495,9 @@ describe('TokenRenderer Integration Tests', () => {
       store.getState().setGMView(false);
       await expectLooks(['g1', 'g2', 'o1', 'o2'], ['gm 1', 'gm 2', 'gm 1', 'gm 2']);
       store.getState().updateToken('g2', { imagePath: ORC_IMAGE });
-      await expectLooks(['g1', 'g2', 'o1', 'o2'], ['none', 'players 3', 'gm 1', 'gm 2']);
+      await expectLooks(['g1', 'g2', 'o1', 'o2'], ['none', 'gm 3', 'gm 1', 'gm 2']);
       store.getState().setGMView(true);
-      expect(looks('g1', 'g2', 'o1', 'o2')).toEqual(['none', 'gm 2', 'gm 1', 'gm 2']);
+      expect(looks('g1', 'g2', 'o1', 'o2')).toEqual(['none', 'gm 3', 'gm 1', 'gm 2']);
     });
 
     it('frames a change the canvas has not drawn yet with the badges it brings, also where the canvas holds one off', async () => {

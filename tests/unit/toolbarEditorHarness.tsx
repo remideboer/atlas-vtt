@@ -43,9 +43,11 @@ export interface ToolbarHarnessOptions {
 // jsdom lays nothing out: every control of the bar is 40px wide where the bar has room to measure.
 const CONTROL_WIDTH = 40;
 
-export function renderToolbar({ player = false, stored = {}, space = null, notePreviews, undoBar = false }: ToolbarHarnessOptions = {}): ToolbarHarness {
+export async function renderToolbar({ player = false, stored = {}, space = null, notePreviews, undoBar = false }: ToolbarHarnessOptions = {}): Promise<ToolbarHarness> {
   const { app } = createInMemoryApp({ files: {} });
   const settings = new SettingsService(app);
+  // The file is read first, as at startup. A layout written before that is lost when the read lands.
+  await settings.initialize();
   // The palette's first-run tutorial would cover it and take its keys.
   settings.completeTutorial('palette');
   settings.setToolbarLayout(stored);

@@ -41,9 +41,9 @@ function pointer(type: string, x: number, y: number): PointerEvent {
 
 setUpToolbarTestDom();
 
-describe('focus around the editor menu', () => {
+describe('focus around the editor menu', async () => {
   it('returns to the handle when Escape closes a menu that Shift+F10 opened', async () => {
-    const harness = renderToolbar();
+    const harness = await renderToolbar();
     startEditing(harness);
     const fog = handle(harness.container, 'fog');
     act(() => fog.focus());
@@ -54,7 +54,7 @@ describe('focus around the editor menu', () => {
   });
 
   it('goes to "More tools" after Hide from one of its rows, and back to it on Escape', async () => {
-    const harness = renderToolbar({ space: 200 });
+    const harness = await renderToolbar({ space: 200 });
     startEditing(harness);
     fireEvent.click(moreTools());
     fireEvent.click(within(screen.getByRole('menu', { name: 'More tools' })).getByRole('menuitem', { name: /^Asset Manager/ }));
@@ -70,9 +70,9 @@ describe('focus around the editor menu', () => {
   });
 });
 
-describe('Delete and Backspace while editing', () => {
-  it('never reach the map\'s Delete from a tray tool, Reset or Done', () => {
-    const harness = renderToolbar({ stored: { hidden: ['fog'] } });
+describe('Delete and Backspace while editing', async () => {
+  it('never reach the map\'s Delete from a tray tool, Reset or Done', async () => {
+    const harness = await renderToolbar({ stored: { hidden: ['fog'] } });
     const map = listenForMapDelete();
     try {
       startEditing(harness);
@@ -89,8 +89,8 @@ describe('Delete and Backspace while editing', () => {
     }
   });
 
-  it('do nothing on a handle while a tool is dragged, and never reach the map', () => {
-    const harness = renderToolbar();
+  it('do nothing on a handle while a tool is dragged, and never reach the map', async () => {
+    const harness = await renderToolbar();
     const map = listenForMapDelete();
     try {
       startEditing(harness);
@@ -111,10 +111,10 @@ describe('Delete and Backspace while editing', () => {
   });
 });
 
-describe('note previews during a drag', () => {
-  it('stay suspended when the asset manager opens mid-drag and ends edit mode', () => {
+describe('note previews during a drag', async () => {
+  it('stay suspended when the asset manager opens mid-drag and ends edit mode', async () => {
     const notePreviews = { suspendPreviews: vi.fn(), resumePreviews: vi.fn() };
-    const harness = renderToolbar({ notePreviews });
+    const harness = await renderToolbar({ notePreviews });
     startEditing(harness);
     act(() => {
       handle(harness.container, 'fog').dispatchEvent(pointer('pointerdown', 10, 10));
@@ -131,9 +131,9 @@ describe('note previews during a drag', () => {
   });
 });
 
-describe('Lighting in the editor', () => {
-  it('is in the tray while hidden with dynamic lighting on, and leaves it when the switch goes off', () => {
-    const harness = renderToolbar({ stored: { hidden: ['wall'] } });
+describe('Lighting in the editor', async () => {
+  it('is in the tray while hidden with dynamic lighting on, and leaves it when the switch goes off', async () => {
+    const harness = await renderToolbar({ stored: { hidden: ['wall'] } });
     act(() => harness.settings.setExperimental('dynamicLighting', true));
     startEditing(harness);
     expect(trayIds(harness.container)).toEqual(['wall']);
@@ -145,9 +145,9 @@ describe('Lighting in the editor', () => {
   });
 });
 
-describe('a press outside the editor', () => {
-  it('ends edit mode with the left button, and not on the bars, the tray or with the right button', () => {
-    const harness = renderToolbar({ stored: { hidden: ['text'] }, undoBar: true });
+describe('a press outside the editor', async () => {
+  it('ends edit mode with the left button, and not on the bars, the tray or with the right button', async () => {
+    const harness = await renderToolbar({ stored: { hidden: ['text'] }, undoBar: true });
     startEditing(harness);
     const outside = document.body.appendChild(document.createElement('div'));
     const press = (target: Element, button = 0): void => {

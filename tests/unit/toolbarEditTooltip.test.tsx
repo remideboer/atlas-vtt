@@ -63,15 +63,15 @@ const hover = (target: Element, kind = 'mouse'): void => pointer('pointerover', 
 const leave = (target: Element): void => pointer('pointerout', target, { relatedTarget: document.body });
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms); });
 
-function editing(): ToolbarHarness {
-  const harness = renderToolbar();
+async function editing(): Promise<ToolbarHarness> {
+  const harness = await renderToolbar();
   startEditing(harness);
   return harness;
 }
 
 describe('the toolbar editor\'s card', () => {
   it('opens after half a second of hover with the tool\'s name, key, sentence and screenshot', async () => {
-    const { container } = editing();
+    const { container } = await editing();
     hover(handle(container, 'fog'));
     await sleep(300);
     expect(card().hidden).toBe(true);
@@ -85,7 +85,7 @@ describe('the toolbar editor\'s card', () => {
 
   it('leaves the screenshot out where the room above the tray is too low for it', async () => {
     rowTop = CARD_HEIGHT;
-    const { container } = editing();
+    const { container } = await editing();
     hover(handle(container, 'fog'));
     await waitFor(() => expect(isShown()).toBe(true));
     expect(card().querySelector('img')).toBeNull();
@@ -93,7 +93,7 @@ describe('the toolbar editor\'s card', () => {
   });
 
   it('hides at once on a press, and stays away from the pressed tool until the pointer leaves it', async () => {
-    const { container } = editing();
+    const { container } = await editing();
     const fog = handle(container, 'fog');
     hover(fog);
     await waitFor(() => expect(isShown()).toBe(true));
@@ -109,14 +109,14 @@ describe('the toolbar editor\'s card', () => {
   });
 
   it('gives touch no card', async () => {
-    const { container } = editing();
+    const { container } = await editing();
     hover(handle(container, 'fog'), 'touch');
     await sleep(700);
     expect(card().hidden).toBe(true);
   });
 
   it('opens at once for keyboard focus, follows the arrow keys, and lets Escape end edit mode', async () => {
-    const { container, store } = editing();
+    const { container, store } = await editing();
     act(() => handle(container, 'move').focus());
     await waitFor(() => expect(isShown()).toBe(true));
     expect(card().textContent).toContain('Move and select');
@@ -129,7 +129,7 @@ describe('the toolbar editor\'s card', () => {
   });
 
   it('opens no card for the focus edit mode puts on the bar when started from the keyboard', async () => {
-    const { container, store } = renderToolbar();
+    const { container, store } = await renderToolbar();
     act(() => store.getState().setCommandPaletteOpen(true));
     const input = screen.getByPlaceholderText('Search commands...');
     fireEvent.change(input, { target: { value: 'Customize toolbar' } });

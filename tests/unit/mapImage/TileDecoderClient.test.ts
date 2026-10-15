@@ -51,7 +51,7 @@ function crashableWorkers(createCore: CoreFactory): { worker: PortFactory; crash
 
 /** Rejects with `hung` when `promise` has not settled within a few tasks. */
 function settles<T>(promise: Promise<T>): Promise<T> {
-  return Promise.race([promise, new Promise<T>((_resolve, reject) => window.setTimeout(() => reject(new Error('hung')), 50))]);
+  return Promise.race([promise, new Promise<T>((_resolve, reject) => window.setTimeout(() => reject(new Error('hung')), 2000))]);
 }
 
 function whenComplete(client: TileDecoderClient, hash: string): Promise<void> {

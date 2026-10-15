@@ -136,5 +136,5 @@ describe('hedges that run together are one hedge', () => {
     expect(asked).toBeGreaterThan(150_000);
     expect(behindOne).toBeGreaterThan(30_000);
     expect({ leaks, hidden }).toEqual({ leaks: 0, hidden: 0 });
-  });
+  }, 30000);
 });

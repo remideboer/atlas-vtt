@@ -140,7 +140,7 @@ describe('a token placed from a statblock note', () => {
     const spawned: Array<Record<string, unknown>> = [];
     const view = {
       leaf: {},
-      serviceManager: { getRendererService: () => ({ getViewport: () => viewport, getGridSystem: () => null }) },
+      serviceManager: { getRendererService: () => ({ getViewport: () => viewport, getGridSystem: () => null, getApp: () => ({ canvas: null }) }) },
       getStore: () => ({ getState: () => ({
         mapPath: 'maps/cave.atlasmap', isMapLoading: false, setSelection: vi.fn(),
         addTokens: (tokens: Array<Record<string, unknown>>) => tokens.map((token) => { spawned.push(token); return `tok_${spawned.length}`; }),

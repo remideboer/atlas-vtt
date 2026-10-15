@@ -39,9 +39,9 @@ function listenLikeTheMap(store: ViewAtlasStore): () => void {
 
 setUpToolbarTestDom();
 
-describe('entering the toolbar editor', () => {
-  it('is offered in the GM\'s palette and starts edit mode, closing the palette', () => {
-    const harness = renderToolbar();
+describe('entering the toolbar editor', async () => {
+  it('is offered in the GM\'s palette and starts edit mode, closing the palette', async () => {
+    const harness = await renderToolbar();
     act(() => harness.store.getState().setCommandPaletteOpen(true));
     fireEvent.click(screen.getByRole('button', { name: /^Customize toolbar/ }));
     expect(harness.store.getState()).toMatchObject({ isToolbarEditing: true, isCommandPaletteOpen: false });
@@ -49,16 +49,16 @@ describe('entering the toolbar editor', () => {
     expect(liveRegion(harness.container)).toContain('Editing the toolbar.');
   });
 
-  it('is not offered in the player view', () => {
-    const harness = renderToolbar({ player: true });
+  it('is not offered in the player view', async () => {
+    const harness = await renderToolbar({ player: true });
     act(() => harness.store.getState().setCommandPaletteOpen(true));
     expect(screen.getByPlaceholderText('Search commands...')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Customize toolbar/ })).toBeNull();
     expect(harness.container.querySelector('[role="status"]')).toBeNull();
   });
 
-  it('moves focus onto the bar only when the palette action was chosen with the keyboard', () => {
-    const harness = renderToolbar();
+  it('moves focus onto the bar only when the palette action was chosen with the keyboard', async () => {
+    const harness = await renderToolbar();
     act(() => harness.store.getState().setCommandPaletteOpen(true));
     const input = screen.getByPlaceholderText('Search commands...');
     fireEvent.change(input, { target: { value: 'Customize toolbar' } });
@@ -67,8 +67,8 @@ describe('entering the toolbar editor', () => {
     expect(document.activeElement).toBe(handle(harness.container, 'move'));
   });
 
-  it('makes the tools inert under handles named after the catalog', () => {
-    const harness = renderToolbar();
+  it('makes the tools inert under handles named after the catalog', async () => {
+    const harness = await renderToolbar();
     startEditing(harness);
     const fog = harness.container.querySelector('[data-toolbar-item="fog"]')!;
     expect(fog.querySelector('.atlas-toolbar-item__content')?.hasAttribute('inert')).toBe(true);
@@ -79,17 +79,17 @@ describe('entering the toolbar editor', () => {
     expect(handle(harness.container, 'fog').tabIndex).toBe(-1);
   });
 
-  it('closes the dice tray', () => {
-    const harness = renderToolbar();
+  it('closes the dice tray', async () => {
+    const harness = await renderToolbar();
     act(() => harness.store.getState().setDiceTrayOpen(true));
     startEditing(harness);
     expect(harness.store.getState().isDiceTrayOpen).toBe(false);
   });
 });
 
-describe('the tray', () => {
-  it('holds the hidden tools in their remembered order, then Reset and Done', () => {
-    const harness = renderToolbar({ stored: { order: ['loot', 'move', 'fog'], hidden: ['fog', 'loot'] } });
+describe('the tray', async () => {
+  it('holds the hidden tools in their remembered order, then Reset and Done', async () => {
+    const harness = await renderToolbar({ stored: { order: ['loot', 'move', 'fog'], hidden: ['fog', 'loot'] } });
     startEditing(harness);
     expect(trayIds(harness.container)).toEqual(['loot', 'fog']);
     const tray = harness.container.querySelector<HTMLElement>('.atlas-toolbar-tray')!;
@@ -98,16 +98,16 @@ describe('the tray', () => {
     expect(within(tray).queryByText('Drag a tool here to hide it')).toBeNull();
   });
 
-  it('shows a hint while no tool is hidden, and Reset disabled on the default layout', () => {
-    const harness = renderToolbar();
+  it('shows a hint while no tool is hidden, and Reset disabled on the default layout', async () => {
+    const harness = await renderToolbar();
     startEditing(harness);
     const tray = harness.container.querySelector<HTMLElement>('.atlas-toolbar-tray')!;
     expect(within(tray).getByText('Drag a tool here to hide it')).toBeTruthy();
     expect(within(tray).getByRole('button', { name: 'Reset toolbar' }).getAttribute('aria-disabled')).toBe('true');
   });
 
-  it('resets the layout and undoes the reset', () => {
-    const harness = renderToolbar({ stored: { hidden: ['fog'] } });
+  it('resets the layout and undoes the reset', async () => {
+    const harness = await renderToolbar({ stored: { hidden: ['fog'] } });
     startEditing(harness);
     fireEvent.click(screen.getByRole('button', { name: 'Reset toolbar' }));
     expect(harness.settings.getToolbarLayout()).toEqual({});
@@ -122,7 +122,7 @@ describe('the tray', () => {
   });
 
   it('ends edit mode with Done and returns focus to the Command palette button', async () => {
-    const harness = renderToolbar();
+    const harness = await renderToolbar();
     startEditing(harness);
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(harness.store.getState().isToolbarEditing).toBe(false);
@@ -133,16 +133,16 @@ describe('the tray', () => {
     await waitFor(() => expect(harness.container.querySelector('.atlas-toolbar-tray')).toBeNull());
   });
 
-  it('leaves Hidden tools out of the bar where the view does not offer them', () => {
-    const harness = renderToolbar({ stored: { hidden: ['wall', 'fog'] } });
+  it('leaves Hidden tools out of the bar where the view does not offer them', async () => {
+    const harness = await renderToolbar({ stored: { hidden: ['wall', 'fog'] } });
     startEditing(harness);
     expect(trayIds(harness.container)).toEqual(['fog']);
   });
 });
 
-describe('the editor menu', () => {
+describe('the editor menu', async () => {
   it('offers Hide on a bar tool, disabled on the Command palette', async () => {
-    const harness = renderToolbar();
+    const harness = await renderToolbar();
     startEditing(harness);
     fireEvent.contextMenu(handle(harness.container, 'palette'), { clientX: 10, clientY: 10 });
     const hide = await screen.findByRole('menuitem', { name: 'Hide' });
@@ -150,7 +150,7 @@ describe('the editor menu', () => {
   });
 
   it('hides a tool with Hide and shows it again with Show on toolbar', async () => {
-    const harness = renderToolbar();
+    const harness = await renderToolbar();
     startEditing(harness);
     fireEvent.contextMenu(handle(harness.container, 'fog'), { clientX: 10, clientY: 10 });
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Hide' }));
@@ -163,11 +163,12 @@ describe('the editor menu', () => {
     fireEvent.contextMenu(handle(harness.container, 'fog', 'tray'), { clientX: 10, clientY: 10 });
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Show on toolbar' }));
     expect(harness.settings.getToolbarLayout()).toEqual({});
-    expect(liveRegion(harness.container)).toBe('Fog of war is back on the toolbar, position 2 of 10.');
+    const shown = harness.container.querySelectorAll('.atlas-main-toolbar [data-toolbar-item]:not([hidden])').length;
+    expect(liveRegion(harness.container)).toBe(`Fog of war is back on the toolbar, position 2 of ${shown}.`);
   });
 
   it('opens Hide from a row of "More tools" instead of running the control', async () => {
-    const harness = renderToolbar({ space: 200 });
+    const harness = await renderToolbar({ space: 200 });
     startEditing(harness);
     fireEvent.click(screen.getByRole('button', { name: 'More tools' }));
     const overflow = screen.getByRole('menu', { name: 'More tools' });
@@ -179,9 +180,9 @@ describe('the editor menu', () => {
   });
 });
 
-describe('the keyboard path', () => {
-  it('moves a bar tool with Alt and the arrow keys, and keeps focus on it', () => {
-    const harness = renderToolbar();
+describe('the keyboard path', async () => {
+  it('moves a bar tool with Alt and the arrow keys, and keeps focus on it', async () => {
+    const harness = await renderToolbar();
     startEditing(harness);
     const fog = handle(harness.container, 'fog');
     act(() => fog.focus());
@@ -191,8 +192,8 @@ describe('the keyboard path', () => {
     expect(liveRegion(harness.container)).toBe('Fog of war moved from position 2 to 3.');
   });
 
-  it('moves focus with the arrow keys and hides with Delete, focus going to the next tool', () => {
-    const harness = renderToolbar();
+  it('moves focus with the arrow keys and hides with Delete, focus going to the next tool', async () => {
+    const harness = await renderToolbar();
     startEditing(harness);
     const move = handle(harness.container, 'move');
     act(() => move.focus());
@@ -205,16 +206,16 @@ describe('the keyboard path', () => {
     expect(document.activeElement).toBe(handle(harness.container, 'draw'));
   });
 
-  it('refuses to hide the Command palette', () => {
-    const harness = renderToolbar();
+  it('refuses to hide the Command palette', async () => {
+    const harness = await renderToolbar();
     startEditing(harness);
     fireEvent.keyDown(handle(harness.container, 'palette'), { key: 'Delete' });
     expect(harness.settings.getToolbarLayout()).toEqual({});
     expect(liveRegion(harness.container)).toBe('The command palette always stays on the toolbar.');
   });
 
-  it('shows a tray tool with Enter and jumps between bar and tray with Up and Down', () => {
-    const harness = renderToolbar({ stored: { hidden: ['fog'] } });
+  it('shows a tray tool with Enter and jumps between bar and tray with Up and Down', async () => {
+    const harness = await renderToolbar({ stored: { hidden: ['fog'] } });
     startEditing(harness);
     const move = handle(harness.container, 'move');
     act(() => move.focus());
@@ -227,7 +228,7 @@ describe('the keyboard path', () => {
   });
 
   it('opens the menu with Shift+F10, whose Hide hands focus to the next tool', async () => {
-    const harness = renderToolbar();
+    const harness = await renderToolbar();
     startEditing(harness);
     const fog = handle(harness.container, 'fog');
     act(() => fog.focus());
@@ -238,8 +239,8 @@ describe('the keyboard path', () => {
     expect(document.activeElement).toBe(handle(harness.container, 'draw'));
   });
 
-  it('keeps Tab from the map\'s shortcuts, so focus moves on from the bar to "More tools"', () => {
-    const harness = renderToolbar({ space: 200 });
+  it('keeps Tab from the map\'s shortcuts, so focus moves on from the bar to "More tools"', async () => {
+    const harness = await renderToolbar({ space: 200 });
     const stop = listenLikeTheMap(harness.store);
     try {
       startEditing(harness);
@@ -256,8 +257,8 @@ describe('the keyboard path', () => {
     }
   });
 
-  it('keeps Enter on Done from the map\'s shortcuts', () => {
-    const harness = renderToolbar();
+  it('keeps Enter on Done from the map\'s shortcuts', async () => {
+    const harness = await renderToolbar();
     const stop = listenLikeTheMap(harness.store);
     try {
       startEditing(harness);
@@ -271,9 +272,9 @@ describe('the keyboard path', () => {
   });
 });
 
-describe('leaving edit mode', () => {
-  it('ends on Escape that no control used, focus returning from a handle to the palette button', () => {
-    const harness = renderToolbar();
+describe('leaving edit mode', async () => {
+  it('ends on Escape that no control used, focus returning from a handle to the palette button', async () => {
+    const harness = await renderToolbar();
     startEditing(harness);
     const fog = handle(harness.container, 'fog');
     act(() => fog.focus());
@@ -283,15 +284,15 @@ describe('leaving edit mode', () => {
   });
 
   it('stays on while Escape closes the editor menu', async () => {
-    const harness = renderToolbar();
+    const harness = await renderToolbar();
     startEditing(harness);
     fireEvent.contextMenu(handle(harness.container, 'fog'), { clientX: 10, clientY: 10 });
     fireEvent.keyDown(await screen.findByRole('menuitem', { name: 'Hide' }), { key: 'Escape' });
     expect(harness.store.getState().isToolbarEditing).toBe(true);
   });
 
-  it('stays on while Escape closes "More tools"', () => {
-    const harness = renderToolbar({ space: 200 });
+  it('stays on while Escape closes "More tools"', async () => {
+    const harness = await renderToolbar({ space: 200 });
     startEditing(harness);
     fireEvent.click(screen.getByRole('button', { name: 'More tools' }));
     expect(fireEvent.keyDown(screen.getByRole('menu', { name: 'More tools' }), { key: 'Escape' })).toBe(false);
@@ -299,8 +300,8 @@ describe('leaving edit mode', () => {
     expect(harness.store.getState().isToolbarEditing).toBe(true);
   });
 
-  it('ends when the scene unloads or another tab comes to the front', () => {
-    const harness = renderToolbar();
+  it('ends when the scene unloads or another tab comes to the front', async () => {
+    const harness = await renderToolbar();
     startEditing(harness);
     act(() => { harness.bus.emit('map-unloading'); });
     expect(harness.store.getState().isToolbarEditing).toBe(false);
@@ -312,7 +313,7 @@ describe('leaving edit mode', () => {
   });
 
   it('ends when the palette opens', async () => {
-    const harness = renderToolbar();
+    const harness = await renderToolbar();
     startEditing(harness);
     act(() => harness.store.getState().setCommandPaletteOpen(true));
     expect(harness.store.getState().isToolbarEditing).toBe(false);

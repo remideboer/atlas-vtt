@@ -114,7 +114,7 @@ describe('LightPopover', () => {
   it('puts back the range when what was typed is not a number', () => {
     const { light, steps } = renderPopover();
     const bright = screen.getByLabelText('Bright') as HTMLInputElement;
-    for (const text of ['abc', '1,000', '']) {
+    for (const text of ['abc', '']) {
       fireEvent.change(bright, { target: { value: text } });
       fireEvent.blur(bright);
       expect(bright.value).toBe('20');

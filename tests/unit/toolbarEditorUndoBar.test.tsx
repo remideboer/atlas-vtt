@@ -34,9 +34,9 @@ function recordChange({ store }: ToolbarHarness): void {
 
 setUpToolbarTestDom();
 
-describe('the undo/redo bar in the toolbar editor', () => {
-  it('is inert under a handle named after the catalog while editing, and never a control of the main bar', () => {
-    const harness = renderToolbar({ undoBar: true });
+describe('the undo/redo bar in the toolbar editor', async () => {
+  it('is inert under a handle named after the catalog while editing, and never a control of the main bar', async () => {
+    const harness = await renderToolbar({ undoBar: true });
     expect(undoSlot(harness.container).querySelector('.atlas-toolbar-handle')).toBeNull();
     startEditing(harness);
     const bar = undoSlot(harness.container).querySelector('.atlas-undo-redo-controls');
@@ -49,7 +49,7 @@ describe('the undo/redo bar in the toolbar editor', () => {
   });
 
   it('hides with Hide from its menu, stays mounted, and shows first in the tray', async () => {
-    const harness = renderToolbar({ undoBar: true, stored: { hidden: ['fog'] } });
+    const harness = await renderToolbar({ undoBar: true, stored: { hidden: ['fog'] } });
     startEditing(harness);
     fireEvent.contextMenu(handle(harness.container, 'undo'), { clientX: 10, clientY: 10 });
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Hide' }));
@@ -59,8 +59,8 @@ describe('the undo/redo bar in the toolbar editor', () => {
     expect(liveRegion(harness.container)).toBe('Undo and redo hidden. Ctrl/Cmd + Z still undoes.');
   });
 
-  it('hides with Delete on its handle, focus going to the bar\'s first tool', () => {
-    const harness = renderToolbar({ undoBar: true });
+  it('hides with Delete on its handle, focus going to the bar\'s first tool', async () => {
+    const harness = await renderToolbar({ undoBar: true });
     startEditing(harness);
     const undo = handle(harness.container, 'undo');
     act(() => undo.focus());
@@ -69,8 +69,8 @@ describe('the undo/redo bar in the toolbar editor', () => {
     expect(document.activeElement).toBe(handle(harness.container, 'move'));
   });
 
-  it('shows again with Enter on its tray face, at its own place', () => {
-    const harness = renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
+  it('shows again with Enter on its tray face, at its own place', async () => {
+    const harness = await renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
     startEditing(harness);
     expect(undoSlot(harness.container).hidden).toBe(true);
     const face = handle(harness.container, 'undo', 'tray');
@@ -84,15 +84,15 @@ describe('the undo/redo bar in the toolbar editor', () => {
   });
 
   it('shows again with Show on toolbar from its tray face', async () => {
-    const harness = renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
+    const harness = await renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
     startEditing(harness);
     fireEvent.contextMenu(handle(harness.container, 'undo', 'tray'), { clientX: 10, clientY: 10 });
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Show on toolbar' }));
     expect(harness.settings.getToolbarLayout()).toEqual({});
   });
 
-  it('comes back with Reset', () => {
-    const harness = renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
+  it('comes back with Reset', async () => {
+    const harness = await renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
     startEditing(harness);
     const tray = harness.container.querySelector<HTMLElement>('.atlas-toolbar-tray')!;
     fireEvent.click(within(tray).getByRole('button', { name: 'Reset toolbar' }));
@@ -100,8 +100,8 @@ describe('the undo/redo bar in the toolbar editor', () => {
     expect(undoSlot(harness.container).hidden).toBe(false);
   });
 
-  it('is first of the bar\'s handles for the arrow keys, and keeps its place with Alt and the arrows', () => {
-    const harness = renderToolbar({ undoBar: true });
+  it('is first of the bar\'s handles for the arrow keys, and keeps its place with Alt and the arrows', async () => {
+    const harness = await renderToolbar({ undoBar: true });
     startEditing(harness);
     const move = handle(harness.container, 'move');
     act(() => move.focus());
@@ -116,8 +116,8 @@ describe('the undo/redo bar in the toolbar editor', () => {
     expect(liveRegion(harness.container)).toBe('Undo and redo always stays left of the toolbar.');
   });
 
-  it('keeps the undo and redo hotkeys while it is hidden', () => {
-    const harness = renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
+  it('keeps the undo and redo hotkeys while it is hidden', async () => {
+    const harness = await renderToolbar({ undoBar: true, stored: { hidden: ['undo'] } });
     const history = getHistoryStore(harness.store);
     recordChange(harness);
     expect(history.getState().pastStates).toHaveLength(1);
@@ -128,8 +128,8 @@ describe('the undo/redo bar in the toolbar editor', () => {
     expect(harness.store.getState().background).toBe('maps/cave.png');
   });
 
-  it('ignores its clicks while editing, as the tools do', () => {
-    const harness = renderToolbar({ undoBar: true });
+  it('ignores its clicks while editing, as the tools do', async () => {
+    const harness = await renderToolbar({ undoBar: true });
     recordChange(harness);
     startEditing(harness);
     fireEvent.click(handle(harness.container, 'undo'));
@@ -138,7 +138,7 @@ describe('the undo/redo bar in the toolbar editor', () => {
   });
 
   it('leaves the player view as it was: no undo/redo bar, and a bar that ignores the stored layout', async () => {
-    const harness = renderToolbar({ undoBar: true, player: true, stored: { hidden: ['undo', 'move'] } });
+    const harness = await renderToolbar({ undoBar: true, player: true, stored: { hidden: ['undo', 'move'] } });
     expect(harness.container.querySelector('.atlas-undo-bar')).toBeNull();
     expect(harness.container.querySelector('[data-toolbar-item="move"]')?.hasAttribute('hidden')).toBe(false);
     act(() => harness.store.getState().setToolbarEditing(true));

@@ -163,7 +163,8 @@ describe('`:has()` in the stylesheet Atlas adds to Obsidian', () => {
       expect(read("const css = await import('./sheet.scss');").files).toEqual([sheet]);
       expect(read("export { default } from './sheet.scss';").files).toEqual([sheet]);
       expect(read("require('./sheet.scss');").files).toEqual([sheet]);
-      expect(read("import '@/styles/sheet.scss';").unread).toEqual(["src/app/example.ts: import '@/styles/sheet.scss'"]);
+      const posix = (line: string): string => line.replaceAll('\\', '/');
+      expect(read("import '@/styles/sheet.scss';").unread.map(posix)).toEqual(["src/app/example.ts: import '@/styles/sheet.scss'"]);
       expect(read('import(`./${name}.scss`);').unread).toHaveLength(1);
       expect(read("import './sheet.scss'; import(`./${name}.css`);").unread).toHaveLength(2);
     });

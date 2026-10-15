@@ -6,6 +6,7 @@ it('allows DOM types but not Obsidian DOM extensions, even with library declarat
   const project = ts.readConfigFile(resolve('tsconfig.shared.json'), ts.sys.readFile);
   const { options } = ts.parseJsonConfigFileContent(project.config, ts.sys, process.cwd());
   const file = resolve('src/app/host/typecheck-fixture.ts');
+  const sameFile = (name: string): boolean => resolve(name) === file;
   const source = `
     import type { Point } from 'pixi.js';
     import 'obsidian';
@@ -16,7 +17,7 @@ it('allows DOM types but not Obsidian DOM extensions, even with library declarat
   `;
   const host = ts.createCompilerHost(options);
   const original = host.getSourceFile.bind(host);
-  host.getSourceFile = (name, language, onError, fresh) => name === file
+  host.getSourceFile = (name, language, onError, fresh) => sameFile(name)
     ? ts.createSourceFile(name, source, language, true)
     : original(name, language, onError, fresh);
   const program = ts.createProgram([file], options, host);

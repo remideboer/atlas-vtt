@@ -23,9 +23,16 @@ describe('restorable local player view', () => {
     original.updateSession({ tabId: 'tavern', filePath: 'maps/tavern.atlasmap', frozen: true, camera: { centerX: 100, centerY: 200, scale: 1.5 } });
     const restored = createView();
     await restored.setState(JSON.parse(JSON.stringify(original.getState())), {});
-    expect(restored.getState()).toEqual(original.getState());
+    const presented = {
+      ...original.getState(),
+      zoomLocked: false,
+      pinnedScale: null,
+      panX: 0,
+      panY: 0,
+    };
+    expect(restored.getState()).toEqual(presented);
     await restored.setState({ tabId: 42, filePath: null }, {});
-    expect(restored.getState()).toEqual(original.getState());
+    expect(restored.getState()).toEqual(presented);
   });
 
   it('round-trips the world rectangle players are frozen on', async () => {

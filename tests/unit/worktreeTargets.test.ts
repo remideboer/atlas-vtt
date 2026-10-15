@@ -72,13 +72,14 @@ describe('worktree target resolution', () => {
         '',
       ].join('\n');
 
-    const fakeExists = (candidate: string) => candidate === path.join('/repo/main', 'test-vault/.obsidian');
+    const vault = path.resolve('/repo/main', 'test-vault/.obsidian');
+    const fakeExists = (candidate: string) => path.resolve(candidate) === vault;
 
     const targets = getPluginTargetDirs(root, fakeExec, fakeExists);
     expect(targets).toEqual([
       {
         label: 'test-vault',
-        dirPath: path.join('/repo/main', 'test-vault/.obsidian/plugins/atlas-vtt'),
+        dirPath: path.resolve('/repo/main', 'test-vault/.obsidian/plugins/atlas-vtt'),
       },
     ]);
   });
@@ -92,19 +93,21 @@ describe('worktree target resolution', () => {
         'branch refs/heads/main',
         '',
       ].join('\n');
-    const fakeExists = (candidate: string) =>
-      candidate === '/Users/tester/Github/.obsidian' ||
-      candidate === '/Users/tester/Github/atlas-vtt/test-vault/.obsidian';
+    const vaults = new Set([
+      path.resolve('/Users/tester/Github/.obsidian'),
+      path.resolve('/Users/tester/Github/atlas-vtt/test-vault/.obsidian'),
+    ]);
+    const fakeExists = (candidate: string) => vaults.has(path.resolve(candidate));
 
     const targets = getPluginTargetDirs(root, fakeExec, fakeExists);
     expect(targets).toEqual([
       {
         label: 'workspace-vault',
-        dirPath: path.join('/Users/tester/Github', '.obsidian/plugins/atlas-vtt'),
+        dirPath: path.resolve('/Users/tester/Github', '.obsidian/plugins/atlas-vtt'),
       },
       {
         label: 'test-vault',
-        dirPath: path.join('/Users/tester/Github/atlas-vtt', 'test-vault/.obsidian/plugins/atlas-vtt'),
+        dirPath: path.resolve('/Users/tester/Github/atlas-vtt', 'test-vault/.obsidian/plugins/atlas-vtt'),
       },
     ]);
   });
