@@ -40,9 +40,12 @@
 
 .atlas-select-content {
   @include atlas-select-popover;
-  @include atlas-flex-col($gap: 2px);
-  padding: $spacing-xs;
-  overflow-y: auto;
+  // After the popover's @starting-style, so overflow-y still beats overflow: hidden.
+  & {
+    @include atlas-flex-col($gap: 2px);
+    padding: $spacing-xs;
+    overflow-y: auto;
+  }
 }
 
 .atlas-select-option {

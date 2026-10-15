@@ -55,6 +55,9 @@ networking-test-vault/
 # Unlicensed raw ambient audio, never commit
 src/app/assets/sounds/
 
+# Local build-and-install script (points at this machine's vault)
+build-install.bat
+
 # Local-only data, tooling and non-plugin projects
 /main.js
 data.json

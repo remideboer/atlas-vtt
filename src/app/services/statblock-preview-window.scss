@@ -5,8 +5,8 @@
 // Imperative CMD+hover preview window for tokens on the map, in the asset
 // manager and in the collection export and import dialogs (StatblockPreviewWindow.ts).
 .atlas-statblock-preview-window {
-  @include atlas-statblock-preview-surface;
   z-index: 100;
+  @include atlas-statblock-preview-surface;
 
   // Held while the window is measured for clamping, so it never flashes at
   // an unclamped position.
