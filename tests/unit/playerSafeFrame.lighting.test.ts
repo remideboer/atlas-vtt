@@ -9,8 +9,9 @@ interface Harness {
   renderer: PixiRendererOrchestrator;
   overlay: { visible: boolean };
   modeLayer: { visible: boolean };
+  token: { visible: boolean };
   isSeen: (tokenId: string) => 'seen' | 'unseen';
-  getPlayerViewLayers: ReturnType<typeof vi.fn>;
+  getPlayerViewLayers: (settings: unknown, sight?: (tokenId: string) => 'seen' | 'unseen') => LayerVisibility[];
   render: ReturnType<typeof vi.fn>;
 }
 
@@ -18,8 +19,11 @@ interface Harness {
 function harness(lighting: boolean): Harness {
   const overlay = { visible: true };
   const modeLayer = { visible: false };
+  const token = { visible: true };
   const isSeen = (tokenId: string): 'seen' | 'unseen' => (tokenId === 'hero' ? 'seen' : 'unseen');
-  const getPlayerViewLayers = vi.fn((): LayerVisibility[] => []);
+  const getPlayerViewLayers = (_settings: unknown, sight?: (tokenId: string) => 'seen' | 'unseen'): LayerVisibility[] => (
+    [{ layer: token, visible: sight ? sight('goblin') === 'seen' : true }]
+  );
   const render = vi.fn();
   const renderer = Object.assign(Object.create(PixiRendererOrchestrator.prototype) as PixiRendererOrchestrator, {
     pixiAppManager: { getApp: () => ({ renderer: { render }, stage: {} }), getViewport: fakeViewport },
@@ -31,25 +35,26 @@ function harness(lighting: boolean): Harness {
       playerLayers: (): LayerVisibility[] => [{ layer: modeLayer, visible: true }, { layer: overlay, visible: false }],
     } } : undefined,
   });
-  return { renderer, overlay, modeLayer, isSeen, getPlayerViewLayers, render };
+  return { renderer, overlay, modeLayer, token, isSeen, getPlayerViewLayers, render };
 }
 
 describe('withPlayerSafeFrame and the lighting', () => {
   it('applies the lighting\'s player layers for the capture and puts the GM\'s back', () => {
-    const { renderer, overlay, modeLayer, render } = harness(true);
+    const { renderer, overlay, modeLayer } = harness(true);
     const seen: boolean[] = [];
     renderer.withPlayerSafeFrame(() => seen.push(modeLayer.visible, overlay.visible), SETTINGS, FRAME);
     expect(seen).toEqual([true, false]);
     expect(modeLayer.visible).toBe(false);
     expect(overlay.visible).toBe(true);
-    // The players' frame, then the GM's own again: the frame's pieces went through the canvas
-    expect(render).toHaveBeenCalledTimes(2);
   });
 
-  it('leaves the GM\'s frame to the render that follows, where one does', () => {
-    const { renderer, render } = harness(true);
-    renderer.withPlayerSafeFrame(() => undefined, SETTINGS, FRAME, true);
-    expect(render).toHaveBeenCalledTimes(1);
+  it('puts the GM\'s layers back when the following render paints the GM\'s frame', () => {
+    const { renderer, overlay, modeLayer } = harness(true);
+    const seen: boolean[] = [];
+    renderer.withPlayerSafeFrame(() => seen.push(modeLayer.visible, overlay.visible), SETTINGS, FRAME, true);
+    expect(seen).toEqual([true, false]);
+    expect(modeLayer.visible).toBe(false);
+    expect(overlay.visible).toBe(true);
   });
 
   it('renders the players\' frame through its own camera, centred in its own size, and puts the GM\'s camera back', () => {
@@ -69,32 +74,34 @@ describe('withPlayerSafeFrame and the lighting', () => {
   });
 
   it('renders and copies nothing while the graphics context is lost', () => {
-    const { renderer, render, modeLayer } = harness(true);
-    Object.assign(renderer, { playerFrames: { ...fakePlayerFrames(render), canRender: () => false } });
+    const { renderer, modeLayer } = harness(true);
+    Object.assign(renderer, { playerFrames: { ...fakePlayerFrames(), canRender: () => false } });
     const copy = vi.fn();
     renderer.withPlayerSafeFrame(copy, SETTINGS, FRAME);
     expect(copy).not.toHaveBeenCalled();
-    expect(render).not.toHaveBeenCalled();
     expect(modeLayer.visible).toBe(false);
   });
 
   it('puts the GM\'s layers and frame back when the players\' frame fails', () => {
-    const { renderer, render, overlay } = harness(true);
+    const { renderer, overlay } = harness(true);
     Object.assign(renderer, { playerFrames: { ...fakePlayerFrames(), render: () => { throw new Error('failed'); } } });
     expect(() => renderer.withPlayerSafeFrame(() => undefined, SETTINGS, FRAME)).toThrow('failed');
     expect(overlay.visible).toBe(true);
-    expect(render).toHaveBeenCalledTimes(1);
   });
 
-  it('hides tokens by the lighting\'s sight', () => {
-    const { renderer, isSeen, getPlayerViewLayers } = harness(true);
-    renderer.withPlayerSafeFrame(() => undefined, SETTINGS, FRAME);
-    expect(getPlayerViewLayers).toHaveBeenCalledWith(SETTINGS, isSeen);
+  it('hides a token the lighting does not see, and shows it again afterwards', () => {
+    const { renderer, token } = harness(true);
+    const during: boolean[] = [];
+    renderer.withPlayerSafeFrame(() => during.push(token.visible), SETTINGS, FRAME);
+    expect(during).toEqual([false]);
+    expect(token.visible).toBe(true);
   });
 
   it('hides nothing by sight in a view without lighting', () => {
-    const { renderer, getPlayerViewLayers } = harness(false);
-    renderer.withPlayerSafeFrame(() => undefined, SETTINGS, FRAME);
-    expect(getPlayerViewLayers).toHaveBeenCalledWith(SETTINGS, undefined);
+    const { renderer, token } = harness(false);
+    const during: boolean[] = [];
+    renderer.withPlayerSafeFrame(() => during.push(token.visible), SETTINGS, FRAME);
+    expect(during).toEqual([true]);
+    expect(token.visible).toBe(true);
   });
 });

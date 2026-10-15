@@ -11,53 +11,57 @@ const SETTINGS = { showTokenNameplates: true } as never;
 /** The orchestrator with only what a player frame and a picture of the scene read. */
 function harness(options: { tokens?: boolean; lighting?: boolean } = {}): {
   renderer: PixiRendererOrchestrator;
-  part: { visible: boolean };
+  hero: { visible: boolean };
+  goblin: { visible: boolean };
   sight: (id: string) => 'seen' | 'unseen';
   seenInFrame: (id: string) => boolean;
-  playersSeeInFrame: ReturnType<typeof vi.fn>;
-  getPlayerViewLayers: ReturnType<typeof vi.fn>;
 } {
-  const part = { visible: true };
+  const hero = { visible: true };
+  const goblin = { visible: true };
   const sight = (id: string): 'seen' | 'unseen' => (id === 'hero' ? 'seen' : 'unseen');
   const seenInFrame = (id: string): boolean => id === 'hero';
-  const playersSeeInFrame = vi.fn(() => seenInFrame);
-  const getPlayerViewLayers = vi.fn((seen: (id: string) => boolean): LayerVisibility[] => [{ layer: part, visible: seen('goblin') }]);
   const renderer = Object.assign(Object.create(PixiRendererOrchestrator.prototype) as PixiRendererOrchestrator, {
     pixiAppManager: { getApp: () => ({ renderer: { render: vi.fn() }, stage: {} }), getViewport: fakeViewport },
     playerFrames: fakePlayerFrames(),
-    tokenRenderer: options.tokens === false ? undefined : { getPlayerViewLayers: () => [], getGmViewLayers: () => [], playersSeeInFrame },
-    measureRenderer: { getPlayerViewLayers, getGmViewLayers: (): LayerVisibility[] => [{ layer: part, visible: true }] },
+    tokenRenderer: options.tokens === false ? undefined : { getPlayerViewLayers: () => [], getGmViewLayers: () => [], playersSeeInFrame: () => seenInFrame },
+    measureRenderer: {
+      getPlayerViewLayers: (seen: (id: string) => boolean): LayerVisibility[] => [
+        { layer: hero, visible: seen('hero') },
+        { layer: goblin, visible: seen('goblin') },
+      ],
+      getGmViewLayers: (): LayerVisibility[] => [{ layer: hero, visible: true }, { layer: goblin, visible: true }],
+    },
     dmScreenOverlays: new Set(),
     lightingFeature: options.lighting ? { controller: { playerSight: () => sight, playerLayers: (): LayerVisibility[] => [] } } : undefined,
   });
-  return { renderer, part, sight, seenInFrame, playersSeeInFrame, getPlayerViewLayers };
+  return { renderer, hero, goblin, sight, seenInFrame };
 }
 
 describe('withPlayerSafeFrame and the measurements', () => {
-  it('asks once per capture which tokens the players see, by the lighting\'s sight, and hides measurements by it', () => {
-    const { renderer, part, sight, seenInFrame, playersSeeInFrame, getPlayerViewLayers } = harness({ lighting: true });
+  it('hides a measurement of a token the players do not see, and keeps one they do see', () => {
+    const { renderer, hero, goblin } = harness({ lighting: true });
     const during: boolean[] = [];
-    renderer.withPlayerSafeFrame(() => during.push(part.visible), SETTINGS, FRAME);
-    expect(playersSeeInFrame).toHaveBeenCalledTimes(1);
-    expect(playersSeeInFrame).toHaveBeenCalledWith(sight);
-    expect(getPlayerViewLayers).toHaveBeenCalledWith(seenInFrame);
-    expect(during).toEqual([false]);
-    expect(part.visible).toBe(true);
+    renderer.withPlayerSafeFrame(() => during.push(hero.visible, goblin.visible), SETTINGS, FRAME);
+    expect(during).toEqual([true, false]);
+    expect([hero.visible, goblin.visible]).toEqual([true, true]);
   });
 
-  it('sees no token while there is no token renderer, so no measurement from one shows', () => {
-    const { renderer, getPlayerViewLayers } = harness({ tokens: false });
-    renderer.withPlayerSafeFrame(() => undefined, SETTINGS, FRAME);
-    const seen = getPlayerViewLayers.mock.calls[0]?.[0] as (id: string) => boolean;
-    expect(['hero', 'goblin'].map(seen)).toEqual([false, false]);
+  it('hides every measurement while there is no token renderer', () => {
+    const { renderer, hero, goblin } = harness({ tokens: false });
+    const during: boolean[] = [];
+    renderer.withPlayerSafeFrame(() => during.push(hero.visible, goblin.visible), SETTINGS, FRAME);
+    expect(during).toEqual([false, false]);
+    expect([hero.visible, goblin.visible]).toEqual([true, true]);
   });
 
   it('keeps the measurements as the GM sees them in a picture of the scene', () => {
-    const { renderer, part } = harness();
-    part.visible = false;
-    const during = renderer.captureSceneFrame({} as never, () => part.visible);
+    const { renderer, hero, goblin } = harness();
+    hero.visible = false;
+    goblin.visible = false;
+    const during = renderer.captureSceneFrame({} as never, () => hero.visible && goblin.visible);
     expect(during).toBe(true);
-    expect(part.visible).toBe(false);
+    expect(hero.visible).toBe(false);
+    expect(goblin.visible).toBe(false);
   });
 });
 

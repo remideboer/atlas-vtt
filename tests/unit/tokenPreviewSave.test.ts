@@ -56,6 +56,14 @@ it('retains failed previews for retry and removes only successfully saved previe
   expect((await assetService.getTokenAssets()).map(t => t.name)).toEqual(['Wolf']);
 });
 
+it.each(['token', 'map'] as const)('saves the preview\'s tags when importing a %s, not the empty list the creator passes', async (mode) => {
+  const { assetService, options, preview } = setup();
+  const tagged = { ...preview, id: 'tagged', name: mode === 'map' ? 'Crypt' : 'Goblin', tags: ['Existing', 'New tag'], statblockPath: undefined };
+  expect(await saveTokenPreviews({ ...options, mode, previews: [tagged], tags: [] })).toBe(1);
+  const [saved] = mode === 'map' ? await assetService.getAssets(undefined, 'map') : await assetService.getTokenAssets();
+  expect(saved).toMatchObject({ tags: ['Existing', 'New tag'] });
+});
+
 it('builds the tiles of a saved map ahead, and of no token', async () => {
   const { app, assetService, options, preview } = setup();
   expect(await saveTokenPreviews(options)).toBe(1);

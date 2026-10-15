@@ -16,13 +16,14 @@ function setup(options: { sceneLoads: boolean; mapLoaded: boolean; isMapLoading?
   const caveId = tabMetaStore.getState().addTab(CAVE.path, 'Cave');
   const towerId = tabMetaStore.getState().addTab(TOWER.path, 'Tower');
   tabMetaStore.getState().setActiveTab(caveId);
+  const mapService = { suspendForRewrite: vi.fn() };
   const context = {
     tabMetaStore, sceneRequests: 0,
     // Cave is the active tab; its scene is in the store when one is loaded
     store: { getState: () => ({
       mapLoaded: options.mapLoaded, isMapLoading: options.isMapLoading ?? false, mapPath: options.mapLoaded ? CAVE.path : null,
     }) },
-    _serviceManager: { getMapService: () => ({ suspendForRewrite: vi.fn() }) },
+    _serviceManager: { getMapService: () => mapService },
     flushPendingSaves: vi.fn().mockResolvedValue(undefined),
     saveTemporalState: vi.fn(), saveViewportState: vi.fn(),
     restoreTemporalState: vi.fn(),
@@ -35,7 +36,7 @@ function setup(options: { sceneLoads: boolean; mapLoaded: boolean; isMapLoading?
   };
   Object.setPrototypeOf(context, AtlasView.prototype);
   const switchToTab = (id: string): Promise<void> => AtlasView.prototype.switchToTab.call(context as unknown as AtlasView, id);
-  return { context, switchToTab, caveId, towerId };
+  return { context, switchToTab, caveId, towerId, mapService };
 }
 
 describe('switching scene tabs around a load that did not finish', () => {
@@ -118,7 +119,7 @@ describe('switching scene tabs around a load that did not finish', () => {
   });
 
   it('reloads the scene the store holds, not the file of a tab that failed to open', async () => {
-    const { context } = setup({ sceneLoads: true, mapLoaded: true });
+    const { context, mapService } = setup({ sceneLoads: true, mapLoaded: true });
     Object.assign(context, { file: TOWER });
     const rewrite = vi.fn().mockResolvedValue(undefined);
 
@@ -126,5 +127,8 @@ describe('switching scene tabs around a load that did not finish', () => {
 
     expect(rewrite).toHaveBeenCalledWith(CAVE);
     expect(context.performSceneLoad).toHaveBeenCalledWith(CAVE, undefined);
+    expect(mapService.suspendForRewrite.mock.invocationCallOrder[0]).toBeLessThan(context.flushPendingSaves.mock.invocationCallOrder[0]);
+    expect(context.flushPendingSaves.mock.invocationCallOrder[0]).toBeLessThan(rewrite.mock.invocationCallOrder[0]);
+    expect(rewrite.mock.invocationCallOrder[0]).toBeLessThan(context.performSceneLoad.mock.invocationCallOrder[0]);
   });
 });

@@ -173,25 +173,27 @@ describe('PlayerFrameMirror and the map image', () => {
 
 describe('a players\' frame of a map view', () => {
   /** The orchestrator with only what a players' frame reads; its map image notes what it draws for. */
-  function view(events: string[]): { renderer: PixiRendererOrchestrator; drawFor: ReturnType<typeof vi.fn> } {
-    const drawFor = vi.fn((_view: TileView) => {
+  function view(events: string[]): { renderer: PixiRendererOrchestrator; drawn: () => TileView | null } {
+    let drawnView: TileView | null = null;
+    const drawFor = (viewFor: TileView): (() => void) => {
+      drawnView = viewFor;
       events.push('draw:players');
       return (): void => { events.push('draw:dm'); };
-    });
+    };
     const renderer = Object.assign(Object.create(PixiRendererOrchestrator.prototype) as PixiRendererOrchestrator, {
       pixiAppManager: { getApp: () => ({ renderer: { render: () => events.push('render:dm') }, stage: {} }), getViewport: fakeViewport },
       playerFrames: fakePlayerFrames(() => events.push('render:player')),
       mapImage: { drawFor },
       dmScreenOverlays: new Set(),
     });
-    return { renderer, drawFor };
+    return { renderer, drawn: () => drawnView };
   }
 
   it('draws the map image at the frame\'s own detail, and the DM\'s again before the DM\'s render', () => {
     const events: string[] = [];
-    const { renderer, drawFor } = view(events);
+    const { renderer, drawn } = view(events);
     renderer.withPlayerSafeFrame(() => events.push('copy'), SETTINGS, FRAME);
-    expect(drawFor).toHaveBeenCalledWith(frameView(FRAME));
+    expect(drawn()).toEqual(frameView(FRAME));
     expect(events).toEqual(['draw:players', 'render:player', 'copy', 'draw:dm', 'render:dm']);
   });
 

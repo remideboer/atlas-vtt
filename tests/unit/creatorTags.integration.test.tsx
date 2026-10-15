@@ -4,17 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { TFolder, type TAbstractFile } from 'obsidian';
 import { AssetService } from '../../src/app/services/AssetService';
 import { AtlasUIContext } from '../../src/app/react/root/AtlasUIContext';
-import { TokenCreator } from '../../src/app/packages/components/asset-manager/TokenCreator';
 import CreateSceneModal from '../../src/app/packages/components/asset-manager/CreateSceneModal';
-
-const { converted } = vi.hoisted(() => ({ converted: { image: { arrayBuffer: async () => new ArrayBuffer(1) } as Blob, thumbnail: null, preview: null, sourcePreview: null } }));
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/TokenPreviewCard', () => ({ TokenPreviewCard: () => null }));
-vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
-  convertForPreview: async () => converted,
-  cropTokenImage: async () => converted,
-  optimizeUpload: async () => converted,
-  colorKeyOf: () => undefined,
-}));
 
 const service = {
   initialize: vi.fn().mockResolvedValue(undefined),
@@ -22,7 +12,6 @@ const service = {
   getCollection: vi.fn(async (id: string) => (await service.getCollections()).find((c: { id: string }) => c.id === id) ?? null),
   getAllTags: vi.fn().mockResolvedValue(['Existing']),
   createTag: vi.fn(async (_collection: string, _group: string, name: string) => ({ name })),
-  addAssets: vi.fn(async (assets: unknown[]) => assets),
   addAsset: vi.fn().mockResolvedValue({}),
   getAssets: vi.fn().mockResolvedValue([]),
   getCollectionSettings: vi.fn().mockReturnValue({}),
@@ -42,8 +31,6 @@ const app = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
-  URL.createObjectURL = vi.fn(() => 'blob:art');
-  URL.revokeObjectURL = vi.fn();
   service.getCollections.mockResolvedValue([{ id: 'default', name: 'Default' }]);
   app.vault.getAbstractFileByPath.mockReturnValue(null);
   app.vault.getFolderByPath.mockImplementation((path: string) => new TFolder(path));
@@ -65,19 +52,6 @@ async function selectAndCreateTags(group: 'tokens' | 'maps') {
   await waitFor(() => expect(screen.getByRole('button', { name: 'New tag' }).getAttribute('aria-pressed')).toBe('true'));
   expect(service.createTag).toHaveBeenCalledWith('default', group, 'New tag');
 }
-
-it.each(['token', 'map'] as const)('persists selected and newly created tags when importing a %s', async (mode) => {
-  mount(<TokenCreator isOpen onClose={() => {}} mode={mode} />);
-  fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['art'], 'Test.png', { type: 'image/png' })] } });
-  await selectAndCreateTags(mode === 'token' ? 'tokens' : 'maps');
-  const create = await screen.findByRole('button', {
-    name: (accessibleName, element) => Boolean(element.closest('footer') && /^Create/.test(accessibleName)),
-    hidden: false,
-  });
-  await waitFor(() => expect((create as HTMLButtonElement).disabled).toBe(false));
-  fireEvent.click(create);
-  await waitFor(() => expect(service.addAssets).toHaveBeenCalledWith([expect.objectContaining({ type: mode, tags: ['Existing', 'New tag'] })]));
-});
 
 it('persists selected and newly created tags when creating a scene', async () => {
   mount(<CreateSceneModal isOpen onClose={() => {}} onSceneCreated={() => {}}
