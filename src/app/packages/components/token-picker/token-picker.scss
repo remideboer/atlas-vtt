@@ -11,6 +11,16 @@
   max-width: 800px;
   height: 80vh;
   max-height: 600px;
+
+  > .modal-header,
+  > .modal-header > .modal-title {
+    cursor: grab;
+  }
+
+  &.is-dragging > .modal-header,
+  &.is-dragging > .modal-header > .modal-title {
+    cursor: grabbing;
+  }
   
   .modal-content {
     height: 100%;

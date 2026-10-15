@@ -15,6 +15,7 @@ import { currentFantasyStatblock } from '../../../services/currentFantasyStatblo
 import { initiativeEntryForToken } from '../../../stores/initiativeEntries';
 import { playerWindowStore } from '../../../stores/playerWindowStore';
 import { insertBlankToken } from '../../../tools/insertBlankToken';
+import { attachModalDrag } from '../../../ui/modalDrag';
 import { ATLAS_NATIVE_MODAL_CLASSES } from '../../../ui/nativeModal';
 import { t } from '../../../i18n';
 import { Button } from '../primitives/button';
@@ -54,6 +55,7 @@ export function openInsertTokenPicker(app: App, view: AtlasView | null, at?: Poi
 
 class InsertTokenPickerModal extends Modal {
   private root: Root | null = null;
+  private disposeDrag: (() => void) | null = null;
   private readonly view: AtlasView;
   private readonly at: Point | null;
 
@@ -69,6 +71,8 @@ class InsertTokenPickerModal extends Modal {
     this.containerEl.addClass('token-picker-modal-layer');
     this.modalEl.addClass(...ATLAS_NATIVE_MODAL_CLASSES, 'token-picker-modal-wrapper');
     this.titleEl.setText(t('picker.insert.title'));
+    const handle = this.titleEl.closest('.modal-header') ?? this.titleEl;
+    this.disposeDrag = attachModalDrag(this.modalEl, handle);
     const container = contentEl.createDiv({ cls: 'token-picker-root' });
     import('react-dom/client').then(({ createRoot }) => {
       this.root = createRoot(container);
@@ -87,6 +91,8 @@ class InsertTokenPickerModal extends Modal {
   }
 
   onClose(): void {
+    this.disposeDrag?.();
+    this.disposeDrag = null;
     this.root?.unmount();
     this.root = null;
   }
